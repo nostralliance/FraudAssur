@@ -39,7 +39,7 @@ def pdf2img(pdfFile: str ,pages: Tuple = None):
         pageMatrix = fitz.Matrix(2, 2)
         pagePix = page.get_pixmap(matrix=pageMatrix, alpha=False)
         # On exporte la page générée
-        pngPath = r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\images'+ '/' + str(paths.rootPath) + paths.tmpDir + os.path.basename(pdfFile) +'/'
+        pngPath = str(paths.rootPath) + paths.tmpDir + os.path.basename(pdfFile)
         # Si le répertoire dédié au pdf n'existe pas encore, on le crée
         if not os.path.exists(pngPath):
             os.makedirs(pngPath)
