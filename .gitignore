@@ -1,0 +1,21 @@
+# Object file
+*.o
+
+# Ada Library Information
+*.ali
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# On ignore les points de montage
+
+images/
+
+
+# on ignore le fichier excel surveillance 
+
+surveillance.xlsx
+
+
