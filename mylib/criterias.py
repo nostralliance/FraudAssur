@@ -10,6 +10,72 @@ import argparse
 # from imutils import paths
 from datetime import datetime
 import numpy as np 
+from PIL import Image
+from PIL.ExifTags import TAGS
+import fitz  # PyMuPDF
+import os
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+
+
+def detect_file_type(data):
+    if data.startswith(b'%PDF'):
+        return 'pdf'
+    elif data.startswith(b'\xFF\xD8'):
+        return 'jpeg'
+    elif data.startswith(b'\x89PNG'):
+        return 'png'
+    else:
+        raise HTTPException(status_code=400, detail="Format de fichier non supporté")
+        
+def detecter_fraude_documentaire(pdf_path):
+    """
+    Fonction pour détecter la fraude documentaire dans un fichier PDF.
+    """
+   
+    extension = os.path.splitext(pdf_path)[1].lower()
+    if extension == '.pdf':
+    # Ouvrir le fichier PDF
+        document = fitz.open(pdf_path)
+ 
+    # Extraire les métadonnées
+        metadata = document.metadata
+        liste=[]
+    # Vérifier la présence de métadonnées suspects
+        for key, value in metadata.items():
+            if isinstance(value, bytes):
+                value = value.decode("utf-8", "ignore")
+            print(f"{key}: {value}")
+        #print(metadata['producer'])
+            liste.append(metadata['producer'])
+            liste.append(metadata['creator'])
+            resultat = ' '.join(liste)
+            regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
+            if len(regimeList)> 1:
+                return True
+                break
+            else:
+                return False
+           
+    if extension in ('.jpg', '.jpeg', '.png'):
+        liste_img=[]
+        with Image.open(pdf_path) as img:
+        # Extraire les métadonnées
+            metadata = img._getexif()
+            if metadata:
+                for tag, value in metadata.items():
+                    tag_name = TAGS.get(tag, tag)
+                    print(f"{tag_name}: {value}")
+                    liste.append(metadata['Software'])
+                    #liste.append(metadata['creator'])
+                    resultat = ' '.join(liste)
+                    regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
+                    if len(regimeList)> 1:
+                        return True
+                        break
+                    else:
+                        return False
+
+
 
 
 def replace_last_9(text):
@@ -19,45 +85,45 @@ def replace_last_9(text):
     else:
         return text
 
-def taux_compare(pngText):
-    result_list = []
-    regex = re.compile(r"\d{2}[ ]?[%9]|(100[ ]?%)")
-    for pourcentage_index, pourcentage in enumerate(pngText):
+# def taux_compare(pngText):
+#     result_list = []
+#     regex = re.compile(r"\d{2}[ ]?[%9]|(100[ ]?%)")
+#     for pourcentage_index, pourcentage in enumerate(pngText):
 
-        if re.match(regex, pourcentage):
-            if pourcentage.endswith("%"):
-                pourcentage = pourcentage.replace("%", "")
-                print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
-            elif pourcentage.endswith("9"):
-                pourcentage = replace_last_9(pourcentage)
-                print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
+#         if re.match(regex, pourcentage):
+#             if pourcentage.endswith("%"):
+#                 pourcentage = pourcentage.replace("%", "")
+#                 print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
+#             elif pourcentage.endswith("9"):
+#                 pourcentage = replace_last_9(pourcentage)
+#                 print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
                 
-            if pourcentage_index > 0 and pourcentage_index < len(pngText) - 1:
-                print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
-                mot_avant = pngText[pourcentage_index - 1].replace(",", ".")
-                mot_apres = pngText[pourcentage_index + 1].replace(",", ".")
-                print("Mot précédent:", mot_avant)
-                print("Mot suivant:", mot_apres)
+#             if pourcentage_index > 0 and pourcentage_index < len(pngText) - 1:
+#                 print(f"Pourcentage trouvé à l'index {pourcentage_index}: {pourcentage}")
+#                 mot_avant = pngText[pourcentage_index - 1].replace(",", ".")
+#                 mot_apres = pngText[pourcentage_index + 1].replace(",", ".")
+#                 print("Mot précédent:", mot_avant)
+#                 print("Mot suivant:", mot_apres)
 
-                try:
-                    res = float(mot_avant.replace(" ", ".")) * float(pourcentage) / 100
-                    print("Le résultat est :", round(res, 1))
+#                 try:
+#                     res = float(mot_avant.replace(" ", ".")) * float(pourcentage) / 100
+#                     print("Le résultat est :", round(res, 1))
 
-                    if round(float(res), 1) == round(float(mot_apres.replace(" ", ".")), 1):
-                        print("C'est ok")
-                    else:
-                        result_list.append(res)
-                        print("Pas ok")
-                except ValueError:
-                    print("Erreur de conversion en float")
+#                     if round(float(res), 1) == round(float(mot_apres.replace(" ", ".")), 1):
+#                         print("C'est ok")
+#                     else:
+#                         result_list.append(res)
+#                         print("Pas ok")
+#                 except ValueError:
+#                     print("Erreur de conversion en float")
 
-            else:
-                print("Pas de mot précédent ou suivant")
+#             else:
+#                 print("Pas de mot précédent ou suivant")
 
-    if result_list:
-        return True
-    else:
-        return False
+#     if result_list:
+#         return True
+#     else:
+#         return False
 
 
 
@@ -95,7 +161,6 @@ def dateferiee(pngText):
 
 
 def medical_materiel(pngText):
-    result_list = []
 
     # RegEx pour détecter les mots-clés médicaux et les montants
     matches = re.findall(r'(apnée|apnee|APNEE|PERFUSION|perfusion|LOCATION|location|PPC|ppc)', pngText)
@@ -111,21 +176,15 @@ def medical_materiel(pngText):
                 montant_float = float(montant.replace(",", "."))
                 print("Le montant mutuelle détecté est :", montant)
 
-                if montant_float > 150.00:
-                    result_list.append(montant)
-                    print("Le montant est supérieur à 150 EUR")
+                if montant_float> 150.00:
+                    return True
+                    # print("Le montant est supérieur à 150 EUR")
                     break
                 else:
-                    print("Le prix est inférieur à 150 EUR")
+                    return False
         else:
-            print("Aucun montant trouvé")
+            return False
 
-        print("Facture matériel médical trouvée")
-
-    if result_list:
-        return True
-    else:
-        return False
 
 
 
@@ -150,7 +209,7 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\Fraude\code_Tom\docker\v2\app2\surveillance.xlsx', sheet_name="FINESS")
+    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\surveillance.xlsx', sheet_name="FINESS")
     finessList = data["NUMERO FINESS"].tolist()
     # print(finessList)
     # print("|".join(str(s) for s in finessList))
@@ -160,14 +219,15 @@ def finessfaux(pngText):
     print("la result liste est :",resultList)
     if len(resultList) > 0 :
         return True
+
     else :
          return False
 
 
 
-def adherentssuspicieux(pngText):
+def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\Fraude\code_Tom\docker\v2\app2\surveillance.xlsx', sheet_name="Adhérents")
+    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\surveillance.xlsx', sheet_name="Adhérents")
     usersList = data["NOM COMPLET"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
@@ -257,26 +317,26 @@ def date_compare(pngText):
     return date_superieur_trouver
 
 
-def count_ref(pngText):
-    result = False
+# def count_ref(pngText):
+#     result = False
 
-    for text in pngText:
-        pattern = re.compile(r'r[é|ë|è]f (\d+)[ ]?[ ][ ]?[ ]?(\d+)')
-        matches = pattern.findall(text)
+#     for text in pngText:
+#         pattern = re.compile(r'r[é|ë|è]f (\d+)[ ]?[ ][ ]?[ ]?(\d+)')
+#         matches = pattern.findall(text)
 
-        if matches:
-            for match in matches:
-                group_variable = ''.join(match)
-                print("result group variable:", group_variable)
+#         if matches:
+#             for match in matches:
+#                 group_variable = ''.join(match)
+#                 print("result group variable:", group_variable)
 
-                if len(group_variable) > 17:
-                    print("la reference d'archivage est superieur a 17")
-                    result = True
-                else:
-                    print("la reference d'archivage n'est pas superieur a 17")
-                    result = False
+#                 if len(group_variable) > 17:
+#                     print("la reference d'archivage est superieur a 17")
+#                     result = True
+#                 else:
+#                     print("la reference d'archivage n'est pas superieur a 17")
+#                     result = False
 
-    return result
+#     return result
 
 
 
@@ -311,6 +371,7 @@ def refarchivesfaux(pngText):
                 if not currentResult:
                     print("------Une fausse référence d'archivage a été trouvée !")
                     return True
+                
 
             return False
     else:
