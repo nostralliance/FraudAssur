@@ -15,7 +15,7 @@ from PIL.ExifTags import TAGS
 import fitz  # PyMuPDF
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-
+import pathlib
 
 def detect_file_type(data):
     if data.startswith(b'%PDF'):
@@ -209,7 +209,7 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\surveillance.xlsx', sheet_name="FINESS")
+    data = pd.read_excel(pathlib.Path('FraudAssur/surveillance.xlsx'), sheet_name="FINESS")
     finessList = data["NUMERO FINESS"].tolist()
     # print(finessList)
     # print("|".join(str(s) for s in finessList))
@@ -227,7 +227,7 @@ def finessfaux(pngText):
 
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    data = pd.read_excel(r'C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\surveillance.xlsx', sheet_name="Adhérents")
+    data = pd.read_excel(pathlib.Path('FraudAssur/surveillance.xlsx'), sheet_name="Adhérents")
     usersList = data["NOM COMPLET"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
