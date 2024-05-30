@@ -58,24 +58,28 @@ def detecter_fraude_documentaire(pdf_path):
            
     if extension in ('.jpg', '.jpeg', '.png'):
         liste_img=[]
+        metadonne={}
         with Image.open(pdf_path) as img:
         # Extraire les métadonnées
             metadata = img._getexif()
+            #print(metadata.items())
             if metadata:
                 for tag, value in metadata.items():
                     tag_name = TAGS.get(tag, tag)
                     print(f"{tag_name}: {value}")
-                    liste.append(metadata['Software'])
+                    metadonne[tag_name]=value
+                print(metadonne)
+                if 'Software' in metadonne:
+                    liste_img.append(metadata['Software'])
                     #liste.append(metadata['creator'])
-                    resultat = ' '.join(liste)
+                    resultat = ' '.join(liste_img)
                     regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
                     if len(regimeList)> 1:
                         return True
-                        break
                     else:
                         return False
-
-
+                else:
+                    return False
 
 
 def replace_last_9(text):
@@ -209,7 +213,7 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    data = pd.read_excel(pathlib.Path('FraudAssur/surveillance.xlsx'), sheet_name="FINESS")
+    data = pd.read_excel(r'C:/Users/nathanael/MawebMutuelle/FraudAssur/surveillance.xlsx', sheet_name="finess")
     finessList = data["NUMERO FINESS"].tolist()
     # print(finessList)
     # print("|".join(str(s) for s in finessList))
@@ -227,8 +231,8 @@ def finessfaux(pngText):
 
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    data = pd.read_excel(pathlib.Path('FraudAssur/surveillance.xlsx'), sheet_name="Adhérents")
-    usersList = data["NOM COMPLET"].tolist()
+    data = pd.read_excel(r'C:/Users/nathanael/MawebMutuelle/FraudAssur/surveillance.xlsx', sheet_name="Adhérents")
+    usersList = data["NOM Complet"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
     # print(resultList)
