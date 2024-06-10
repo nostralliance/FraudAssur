@@ -1,6 +1,7 @@
 import pathlib
 rootPath = pathlib.Path('images/')
 tmpDir = '/depot/TMP/'
+tmpDirImg = '/depot/image/'
 dateFerieeDir = '/check/date_feriee/'
 aucuneDir ='/check/aucune_fraude/'
 finessDir = '/check/finess_faux/'

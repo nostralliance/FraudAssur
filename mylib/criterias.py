@@ -5,7 +5,6 @@ from datetime import date
 from jours_feries_france import JoursFeries 
 from dateutil.relativedelta import relativedelta 
 # from autocorrect import Speller
-import cv2 
 import argparse
 # from imutils import paths
 from datetime import datetime
@@ -16,6 +15,9 @@ import fitz  # PyMuPDF
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 import pathlib
+
+
+
 
 def detect_file_type(data):
     if data.startswith(b'%PDF'):
@@ -213,7 +215,9 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    data = pd.read_excel(r'C:/Users/nathanael/MawebMutuelle/FraudAssur/surveillance.xlsx', sheet_name="finess")
+    lien_surveillance = str(paths.rootPath) + '/surveillance.xlsx'
+    #print(lien_surveillance)
+    data = pd.read_excel(lien_surveillance, sheet_name="finess")
     finessList = data["NUMERO FINESS"].tolist()
     # print(finessList)
     # print("|".join(str(s) for s in finessList))
@@ -231,7 +235,8 @@ def finessfaux(pngText):
 
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    data = pd.read_excel(r'C:/Users/nathanael/MawebMutuelle/FraudAssur/surveillance.xlsx', sheet_name="Adhérents")
+    lien_surveillance = str(paths.rootPath) + '/surveillance.xlsx'
+    data = pd.read_excel(lien_surveillance, sheet_name="Adhérents")
     usersList = data["NOM Complet"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
@@ -251,10 +256,10 @@ def compare(date_simple_str, date_reglement_str):
 
     # Comparer les dates
     if date_simple > date_reglement:
-        print(f"{date_simple_str} est supérieure à {date_reglement_str}")
+        #print(f"{date_simple_str} est supérieure à {date_reglement_str}")
         return True
     else:
-        print(f"{date_simple_str} n'est pas supérieure à {date_reglement_str}")
+        #print(f"{date_simple_str} n'est pas supérieure à {date_reglement_str}")
         return False
 
 
