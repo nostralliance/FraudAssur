@@ -39,11 +39,9 @@ total_medical_materiel = 0
 total_meta = 0
 
 
-
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#-------------------------------------------------------------------recevoir du json------------------------------------------------------------------------------
+#-------------------------------------------------------------------recevoir plusieurs json------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 
 @app.post('/process_json')
@@ -255,6 +253,195 @@ async def process_file(request: PDFRequest):
             results.append(result)
 
     except Exception as e:
+            total_ko += 1
+            print(f"An error occurred: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    return results
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------recevoir plusieurs json------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+@app.post('/process_plusieurs_json')
+async def process_file(requests: List[PDFRequest]):
+    global total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
+    
+    results = []
+    
+    for request in requests:
+        total_factures += 1
+        ident = request.idm
+        file = request.url
+        
+        print(f'Traitement du fichier : {file}')
+        
+        try:
+            if not os.path.exists(file):
+                raise HTTPException(status_code=400, detail=f"Le fichier '{file}' n'existe pas.")
+
+            with open(file, 'rb') as file_handle:
+                binary_data = file_handle.read()
+
+            file_extension = criterias.detect_file_type(binary_data)
+            result = {"id": ident, "result": "ko", "motif": "Pas de suspicion de fraude sur cette facture"}  # Résultat par défaut
+
+            if file_extension == 'pdf':
+                pdf_file_path = f'temp_{ident}.pdf'
+                with open(pdf_file_path, 'wb') as pdf_out:
+                    pdf_out.write(binary_data)
+                
+                if criterias.detecter_fraude_documentaire(pdf_file_path):
+                    total_ok += 1
+                    total_meta += 1
+                    result = {"id": ident, "result": "ok", "motif": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                else:
+                    pages = None
+                    png_files = functions.pdf2img(pdf_file_path, pages)
+                    for png_file in png_files:
+                        print("---Traitement de la page : " + os.path.basename(png_file) + "...")
+                        png_text = functions.img2text(png_file)
+                        try:
+                            if criterias.finessfaux(png_text):
+                                total_ok += 1
+                                total_finessfaux += 1
+                                result = {"id": ident, "result": "ok", "motif": "Numéro finess sur facture"}
+                                break
+
+                            if criterias.adherentssoussurveillance(png_text):
+                                total_ok += 1
+                                total_adherentssoussurveillance += 1
+                                result = {"id": ident, "result": "ok", "motif": "Adherent suspicieux"}
+                                break
+
+                            if criterias.refarchivesfaux(png_text):
+                                total_ok += 1
+                                total_refarchivesfaux += 1
+                                result = {"id": ident, "result": "ok", "motif": "Reference archivage fausse sur facture"}
+                                break
+
+                            if criterias.rononsoumis(png_text):
+                                total_ok += 1
+                                total_rononsoumis += 1
+                                result = {"id": ident, "result": "ok", "motif": "Regime obligatoire non soumis sur facture"}
+                                break
+
+                            png_text_list = functions.img2textlist(png_file)
+                            if criterias.date_compare(png_text_list):
+                                total_ok += 1
+                                total_datecompare += 1
+                                result = {"id": ident, "result": "ok", "motif": "Date reglement superieur a date de soins sur facture"}
+                                break
+
+                            if criterias.medical_materiel(png_text):
+                                total_ok += 1
+                                total_medical_materiel += 1
+                                result = {"id": ident, "result": "ok", "motif": "Montant superieur a 150 euros sur facture medical"}
+                                break
+
+                            if criterias.dateferiee(png_text):
+                                total_ok += 1
+                                total_dateferiee += 1
+                                result = {"id": ident, "result": "ok", "motif": "Date fériée sur facture"}
+                                break
+
+                        except Exception as e:
+                            print(e)
+                            total_ko += 1
+                            result = {"id": ident, "result": "ko", "motif": "500, erreur sur le document"}
+                            break
+
+                    os.remove(pdf_file_path)
+
+            elif file_extension in ['jpg', 'jpeg', 'png']:
+                temp_dir = os.path.splitext(os.path.basename(file))[0]  # Utiliser le nom de fichier sans extension
+                os.makedirs(temp_dir, exist_ok=True)
+                file_name = f'{uuid.uuid4()}.{file_extension}'
+                temp_file_path = os.path.join(temp_dir, file_name)
+                print(temp_file_path)
+                with open(temp_file_path, 'wb') as out_file:
+                    out_file.write(binary_data)
+
+                for img_file in os.listdir(temp_dir):
+                    print("---Traitement de l'image ---")
+                    img_path = os.path.join(temp_dir, img_file)
+                    if criterias.detecter_fraude_documentaire(img_path):
+                        total_ok += 1
+                        total_meta += 1
+                        result = {"id": ident, "result": "ok", "motif": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                        shutil.rmtree(temp_dir)
+                        break
+                    
+                    else:
+                        png_text = functions.img2text(img_path)
+                        try:
+                            if criterias.finessfaux(png_text):
+                                total_ok += 1
+                                total_finessfaux += 1
+                                result = {"id": ident, "result": "ok", "motif": "Numéro finess sur facture"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            if criterias.adherentssoussurveillance(png_text):
+                                total_ok += 1
+                                total_adherentssoussurveillance += 1
+                                result = {"id": ident, "result": "ok", "motif": "Adherent suspicieux"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            if criterias.refarchivesfaux(png_text):
+                                total_ok += 1
+                                total_refarchivesfaux += 1
+                                result = {"id": ident, "result": "ok", "motif": "Reference archivage fausse sur facture"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            if criterias.rononsoumis(png_text):
+                                total_ok += 1
+                                total_rononsoumis += 1
+                                result = {"id": ident, "result": "ok", "motif": "Regime obligatoire non soumis sur facture"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            png_text_list = functions.img2textlist(img_path)
+                            if criterias.date_compare(png_text_list):
+                                total_ok += 1
+                                total_datecompare += 1
+                                result = {"id": ident, "result": "ok", "motif": "Date reglement superieur a date de soins sur facture"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            if criterias.medical_materiel(png_text):
+                                total_ok += 1
+                                total_medical_materiel += 1
+                                result = {"id": ident, "result": "ok", "motif": "Montant superieur a 150 euros sur facture medical"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            if criterias.dateferiee(png_text):
+                                total_ok += 1
+                                total_dateferiee += 1
+                                result = {"id": ident, "result": "ok", "motif": "Date fériée sur facture"}
+                                shutil.rmtree(temp_dir)
+                                break
+
+                            else:
+                                total_ko += 1
+                                shutil.rmtree(temp_dir)
+                                results.append({"id": ident, "result": "ko", "motif": "Pas de suspicion de fraude sur cette facture"})
+
+                        except Exception as e:
+                            print(f"An error occurred during criteria evaluation: {str(e)}")
+                            raise HTTPException(status_code=500, detail="Internal Server Error")
+                
+            else:
+                raise HTTPException(status_code=400, detail="Format de fichier non supporté")
+
+            results.append(result)
+
+        except Exception as e:
             total_ko += 1
             print(f"An error occurred: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
