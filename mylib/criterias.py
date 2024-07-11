@@ -33,31 +33,47 @@ def detecter_fraude_documentaire(pdf_path):
     """
     Fonction pour détecter la fraude documentaire dans un fichier PDF.
     """
-   
+
     extension = os.path.splitext(pdf_path)[1].lower()
     if extension == '.pdf':
-    # Ouvrir le fichier PDF
+        # Ouvrir le fichier PDF
         document = fitz.open(pdf_path)
- 
-    # Extraire les métadonnées
+
+        # Extraire les métadonnées
         metadata = document.metadata
-        liste=[]
-    # Vérifier la présence de métadonnées suspects
+        liste = []
+        
+        # Vérifier la présence de métadonnées suspects
         for key, value in metadata.items():
             if isinstance(value, bytes):
                 value = value.decode("utf-8", "ignore")
-            print(f"{key}: {value}")
-        #print(metadata['producer'])
-            liste.append(metadata['producer'])
-            liste.append(metadata['creator'])
-            resultat = ' '.join(liste)
-            regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
-            if len(regimeList)> 1:
-                return True
-                break
-            else:
-                return False
-           
+        
+        # Extraction des dates de création et de modification
+        creation_date_str = metadata.get('creationDate', '')
+        print(creation_date_str)
+        modification_date_str = metadata.get('modDate', '')
+        print(modification_date_str)
+        # Conversion des dates au format datetime
+        creation_date = datetime.strptime(creation_date_str[2:16], "%Y%m%d%H%M%S")
+        modification_date = datetime.strptime(modification_date_str[2:16], "%Y%m%d%H%M%S")
+        
+        # Vérification de la différence entre les dates
+        if modification_date >= creation_date + relativedelta(months=1):
+            print("la date de modification est supérieur a 1 mois")
+            return True
+        
+        liste.append(metadata.get('producer', ''))
+        liste.append(metadata.get('creator', ''))
+        resultat = ' '.join(liste)
+        regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
+        
+        if len(regimeList) > 1:
+            return True
+        else:
+            return False
+                 
+
+
     if extension in ('.jpg', '.jpeg', '.png'):
         liste_img=[]
         metadonne={}
@@ -82,6 +98,7 @@ def detecter_fraude_documentaire(pdf_path):
                         return False
                 else:
                     return False
+
 
 
 def replace_last_9(text):
