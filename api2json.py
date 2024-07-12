@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#-------------------------------------------------------------------Bibliothèque-----------------------------------------------------------------------------------
+#-------------------------------------------------------------------Bibliothèque------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #from . import constants,paths
@@ -136,9 +136,10 @@ total_meta = 0
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+
 @app.post('/process_json')
 async def process_file(current_user: Annotated[User, Depends(get_current_active_user)], request: PDFRequest):
-    global total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
+    global total_modification_creation, total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
     total_factures += 1
     
     
@@ -165,12 +166,18 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                     pdf_out.write(binary_data)
                 
                 if criterias.detecter_fraude_documentaire(pdf_file_path):
-                    test = criterias.detecter_fraude_documentaire(pdf_file_path)
-                    print(test)
                     total_ok += 1
                     total_meta += 1
                     result = {"id": ident, "result": "ok", "motif": "la provenance du document est suspicieuse : photoshop, canva, excel ou word"}
                     #shutil.rmtree(pdf_file_path)
+
+                if criterias.detect_modification_creation(pdf_file_path):
+                    total_ok += 1
+                    total_modification_creation += 1
+                    print("ok")
+                    result = {"id":ident, "result":"ok", "motif": "date de modification supérieur a 1 mois par rapport a la date de création"}
+                    
+                            
                 else:
                     pages = None
                     png_files = functions.pdf2img(pdf_file_path, pages)

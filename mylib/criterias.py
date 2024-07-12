@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 import argparse
 # from imutils import paths
 from datetime import datetime
-import numpy as np 
+import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS
 import fitz  # PyMuPDF
@@ -28,12 +28,8 @@ def detect_file_type(data):
         return 'png'
     else:
         raise HTTPException(status_code=400, detail="Format de fichier non supporté")
-        
-def detecter_fraude_documentaire(pdf_path):
-    """
-    Fonction pour détecter la fraude documentaire dans un fichier PDF.
-    """
 
+def detect_modification_creation(pdf_path):
     extension = os.path.splitext(pdf_path)[1].lower()
     if extension == '.pdf':
         # Ouvrir le fichier PDF
@@ -41,7 +37,6 @@ def detecter_fraude_documentaire(pdf_path):
 
         # Extraire les métadonnées
         metadata = document.metadata
-        liste = []
         
         # Vérifier la présence de métadonnées suspects
         for key, value in metadata.items():
@@ -61,6 +56,30 @@ def detecter_fraude_documentaire(pdf_path):
         if modification_date >= creation_date + relativedelta(months=1):
             print("la date de modification est supérieur a 1 mois")
             return True
+        else:
+            print("la date de modification est pas supérieur a 1 mois")
+            return False
+ 
+
+
+def detecter_fraude_documentaire(pdf_path):
+    """
+    Fonction pour détecter la fraude documentaire dans un fichier PDF.
+    """
+
+    extension = os.path.splitext(pdf_path)[1].lower()
+    if extension == '.pdf':
+        # Ouvrir le fichier PDF
+        document = fitz.open(pdf_path)
+
+        # Extraire les métadonnées
+        metadata = document.metadata
+        liste = []
+        
+        # Vérifier la présence de métadonnées suspects
+        for key, value in metadata.items():
+            if isinstance(value, bytes):
+                value = value.decode("utf-8", "ignore")
         
         liste.append(metadata.get('producer', ''))
         liste.append(metadata.get('creator', ''))
