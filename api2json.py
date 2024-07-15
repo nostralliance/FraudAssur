@@ -129,6 +129,7 @@ total_count_ref = 0
 total_adherentssoussurveillance = 0
 total_medical_materiel = 0
 total_meta = 0
+total_modification_creation = 0
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -357,6 +358,8 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
             total_ko += 1
             print(f"An error occurred: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    # if api_key_verified:
 
     return results
 
