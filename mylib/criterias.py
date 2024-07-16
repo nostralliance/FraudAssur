@@ -45,13 +45,13 @@ def detect_modification_creation(pdf_path):
         
         # Extraction des dates de création et de modification
         creation_date_str = metadata.get('creationDate', '')
-        print(creation_date_str)
         modification_date_str = metadata.get('modDate', '')
-        print(modification_date_str)
         # Conversion des dates au format datetime
         creation_date = datetime.strptime(creation_date_str[2:16], "%Y%m%d%H%M%S")
+        print(creation_date)
         modification_date = datetime.strptime(modification_date_str[2:16], "%Y%m%d%H%M%S")
-        
+        print(modification_date)
+
         # Vérification de la différence entre les dates
         if modification_date >= creation_date + relativedelta(months=1):
             print("la date de modification est supérieur a 1 mois")

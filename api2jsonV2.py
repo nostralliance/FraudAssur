@@ -20,21 +20,12 @@ OCR_API_LOGIN = "apin@fraude.fr"
 OCR_API_PASSWORD = "zeFraude"
 
 # Base de données simulée des utilisateurs
-fake_users_db = {
-    "tomloupierron": {
-        "username": "tomloupierron",
-        "full_name": "tom pierron",
-        "email": "tomlou70@icloud.com",
-        "hashed_password": "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b",
-        "disabled": False,
-    },
-    "benilboudo": {
-        "username": "benilboudo",
-        "full_name": "ben ilboudo",
-        "email": "ben@gmai.com",
-        "hashed_password": "35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2",
-        "disabled": False,
-    },
+user_db = {
+    "apin@fraude.fr": {
+        "username": "apin@fraude.fr",
+        "hashed_password": "aee499d552f14dfbe80805698bf769a6a209fc6a398a9e71b092fecb6f09f509",
+        "disabled": False
+    }
 }
 
 # Fonction pour hasher le mot de passe en utilisant hashlib
@@ -51,8 +42,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Modèle de données pour un utilisateur
 class User(BaseModel):
     username: str
-    email: Union[str, None] = None
-    full_name: Union[str, None] = None
     disabled: Union[bool, None] = None
 
 # Modèle de données pour un utilisateur avec mot de passe haché
@@ -66,14 +55,14 @@ def get_user(db, username: str):
         return UserInDB(**user_dict)
 
 # Décodage du token en tant que username
-def fake_decode_token(token):
-    user = get_user(fake_users_db, token)
+def decode_token(token):
+    user = get_user(user_db, token)
     return user
 
 # Récupération de l'utilisateur courant
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
-    user = fake_decode_token(token)
+    user = decode_token(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,7 +71,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         )
     return user
 
-# Vérification que l'utilisateur n'est pas désactivé
+# Vérification que l'utilisateur n'est pas désactivé, permet également d'acceder au endpoint /process_json
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
@@ -95,7 +84,7 @@ app = FastAPI()
 # Endpoint pour générer un token
 @app.post("/token")
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    user_dict = fake_users_db.get(form_data.username)
+    user_dict = user_db.get(form_data.username)
     if not user_dict:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     user = UserInDB(**user_dict)
@@ -106,7 +95,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 class PDFRequest(BaseModel):
     url: str
-    idm: str
+    idm: Union[str, int]
 
 # Variables globales pour les statistiques
 total_factures = 0

@@ -387,7 +387,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
 
 @app.post('/process_plusieurs_json')
 async def process_file(requests: List[PDFRequest]):
-    global total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
+    global total_modification_creation, total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
     
     results = []
     
@@ -417,6 +417,13 @@ async def process_file(requests: List[PDFRequest]):
                     total_ok += 1
                     total_meta += 1
                     result = {"id": ident, "result": "ok", "motif": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+
+                if criterias.detect_modification_creation(pdf_file_path):
+                    total_ok += 1
+                    total_modification_creation += 1
+                    result = {"id":ident, "result":"ok", "motif": "date de modification supérieur a 1 mois par rapport a la date de création"}
+                
+                
                 else:
                     pages = None
                     png_files = functions.pdf2img(pdf_file_path, pages)
