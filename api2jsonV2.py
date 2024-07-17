@@ -1,23 +1,32 @@
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------Import des librairie------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 import os
 from mylib import functions, criterias
 import signal
 from datetime import datetime
-import uuid
-import shutil
-import pathlib
 from pydantic import BaseModel
 from typing import Annotated, Union, List
 import hashlib
 import hmac
-from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File, Form
+from fastapi import Depends, FastAPI, HTTPException, status, File, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import requests
 from fastapi.responses import JSONResponse
 
-# Configuration de l'API externe
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------Configuration de l'API externe------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# 
 OCR_API_URL = "https://kfjqcvjg55254bjskf45s23kg4sg.giesima.fr"  # Remplacez par l'URL de votre API
 OCR_API_LOGIN = "apin@fraude.fr"
 OCR_API_PASSWORD = "zeFraude"
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------BDD users------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Base de données simulée des utilisateurs
 user_db = {
@@ -28,17 +37,6 @@ user_db = {
     }
 }
 
-# Fonction pour hasher le mot de passe en utilisant hashlib
-def hash_password(password: str):
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
-
-# Fonction pour vérifier le mot de passe
-def verify_password(plain_password: str, hashed_password: str):
-    return hmac.compare_digest(hash_password(plain_password), hashed_password)
-
-# OAuth2PasswordBearer s'attend à ce que le client fournisse le token en tant que Bearer Token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 # Modèle de données pour un utilisateur
 class User(BaseModel):
     username: str
@@ -47,6 +45,23 @@ class User(BaseModel):
 # Modèle de données pour un utilisateur avec mot de passe haché
 class UserInDB(User):
     hashed_password: str
+
+# Fonction pour hasher le mot de passe en utilisant hashlib
+def hash_password(password: str):
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+# Fonction pour vérifier le mot de passe
+def verify_password(plain_password: str, hashed_password: str):
+    return hmac.compare_digest(hash_password(plain_password), hashed_password)
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------Sécurité------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# OAuth2PasswordBearer s'attend à ce que le client fournisse le token en tant que Bearer Token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Récupération d'un utilisateur depuis la base de données simulée
 def get_user(db, username: str):
@@ -93,9 +108,16 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     # Le `access_token` est maintenant défini comme le `username`
     return {"access_token": user.username, "token_type": "bearer"}
 
+
 class PDFRequest(BaseModel):
     url: str
     idm: Union[str, int]
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------/Process_json------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 # Variables globales pour les statistiques
 total_factures = 0
@@ -248,7 +270,12 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         total_ko += 1
                         result = {"docid": ident, "success": "False", "message": "Pas de suspicion de fraude sur cette facture"}
         
-        # Envoi des résultats à l'API externe
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------Envoie du resultat a l'api externe--------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
         try:
             auth_response = requests.post(OCR_API_URL + "/secure/token", json={"login": OCR_API_LOGIN, "password": OCR_API_PASSWORD})
             auth_response.raise_for_status()
