@@ -163,12 +163,12 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
             if criterias.detecter_fraude_documentaire(pdf_file_path):
                 total_ok += 1
                 total_meta += 1
-                result = {"docid": ident, "success": "True", "message": "la provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                result = {"docid": ident, "success": "True", "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
 
             elif criterias.detect_modification_creation(pdf_file_path):
                 total_ok += 1
                 total_modification_creation += 1
-                result = {"docid": ident, "success": "True", "message": "date de modification supérieur a 1 mois par rapport a la date de création"}
+                result = {"docid": ident, "success": "True", "message": "La modification du document est supérieur a 1 mois par rapport a la date de création"}
             
             else:
                 pages = None
@@ -180,44 +180,44 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         if criterias.finessfaux(png_text):
                             total_ok += 1
                             total_finessfaux += 1
-                            result = {"docid": ident, "success": "True", "message": "numéro finess sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Numéro finess faux a été trouvé sur cette facture"}
                             break
 
                         if criterias.adherentssoussurveillance(png_text):
                             total_ok += 1
                             total_adherentssoussurveillance += 1
-                            result = {"docid": ident, "success": "True", "message": "adherent suspicieux"}
+                            result = {"docid": ident, "success": "True", "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
                             break
 
                         if criterias.refarchivesfaux(png_text):
                             total_ok += 1
                             total_refarchivesfaux += 1
-                            result = {"docid": ident, "success": "True", "message": "reference archivage fausse sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
                             break
 
                         if criterias.rononsoumis(png_text):
                             total_ok += 1
                             total_rononsoumis += 1
-                            result = {"docid": ident, "success": "True", "message": "regime obligatoire non soumis sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Regime obligatoire non soumis sur facture"}
                             break
 
                         png_text_list = functions.img2textlist(png_file)
                         if criterias.date_compare(png_text_list):
                             total_ok += 1
                             total_datecompare += 1
-                            result = {"docid": ident, "success": "True", "message": "date reglement supérieur a date de soins sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Date de reglement supérieur a la date de soins sur facture"}
                             break
 
                         if criterias.medical_materiel(png_text):
                             total_ok += 1
                             total_medical_materiel += 1
-                            result = {"docid": ident, "success": "True", "message": "montant superieur a 150 euros sur facture medical"}
+                            result = {"docid": ident, "success": "True", "message": "Montant superieur a 150 euros sur facture medical"}
                             break
 
                         if criterias.dateferiee(png_text):
                             total_ok += 1
                             total_dateferiee += 1
-                            result = {"docid": ident, "success": "True", "message": "date fériée sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Une date fériée a été trouver sur la facture"}
                             break
 
                     except Exception as e:

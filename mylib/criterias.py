@@ -172,34 +172,43 @@ def replace_last_9(text):
 
 
 def dateferiee(pngText):
-    # On récupère la liste des dates dans le texte
-    dateList = re.findall(r'([0-2]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
-    dateList = list(dict.fromkeys(dateList))
-    # On récupère la liste des indices sur Alsace-Moselle dans le texte
-    cpList = re.findall(r'[5-6]7\d{3}', pngText)
-    cityList = re.findall(r'[a|A]lsace|[m|M]oselle', pngText)
-
-    # On initialise le résultat
+    # condition pour exclure les cartes TP
+    pattern= r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
+    regex_devis = r'[Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]'
+    dateListCarteTP = re.findall(pattern, pngText)
+    dateListBucco = re.findall(regex_devis, str(pngText))
+    print("titre trouver :",dateListBucco)
     result = False
+    #if len(dateListCarteTP)>0 or len(): # Vérifier le regex et enlever ce qui a avant pour tester la capture du regex 
+    if len(dateListBucco) == 0:
+        # On récupère la liste des dates dans le texte
+        dateList = re.findall(r'([0-3]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
+        dateList = list(dict.fromkeys(dateList))
+        # On récupère la liste des indices sur Alsace-Moselle dans le texte
+        cpList = re.findall(r'[5-6]7\d{3}', pngText)
+        cityList = re.findall(r'[a|A]lsace|[m|M]oselle', pngText)
 
-    for dateSplit in dateList :
-        dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
+        # On initialise le résultat
+        
 
-        # Si la date est inférieure à la durée maximale de remboursement,        
-        if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS :
+        for dateSplit in dateList :
+            dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
 
-            # Si on est en Alsace-Moselle
-            if len(cpList) > 0 or len(cityList) > 0 :
-                if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle") :
-                    result = True
-                    break
-            else :
-                # Si c'est un jour férié en Métropole, on suspecte une fraude
-                if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole") :
-                    result = True
-                    break
+            # Si la date est inférieure à la durée maximale de remboursement,        
+            if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS :
+
+                # Si on est en Alsace-Moselle
+                if len(cpList) > 0 or len(cityList) > 0 :
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle") :
+                        result = True
+                        break
+                else :
+                    # Si c'est un jour férié en Métropole, on suspecte une fraude
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole") :
+                        result = True
+                        break
+        
     return result
-
 
 
 def medical_materiel(pngText):
@@ -247,7 +256,8 @@ def rononsoumis(pngText):
         return True
     else :
         return False
-    
+
+
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
