@@ -6,3 +6,5 @@ PyMuPDF
 pandas
 jours-feries-france
 httpx
+pydantic
+requests

@@ -271,19 +271,33 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         total_ko += 1
                         result = {"docid": ident, "success": "False", "message": "Pas de suspicion de fraude sur cette facture"}
 
-        else:
-            raise HTTPException(status_code=400, detail="Format de fichier non supporté")
-
-        results.append(result)
-
-    except Exception as e:
-        total_ko += 1
-        print(f"An error occurred: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-    return results
         
 
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------Envoie du resultat a l'api externe--------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+        try:
+            auth_response = requests.post(OCR_API_URL + "/secure/token", json={"login": OCR_API_LOGIN, "password": OCR_API_PASSWORD})
+            auth_response.raise_for_status()
+            access_token = auth_response.json().get('access_token')
+
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
+            }
+            response = requests.post(OCR_API_URL+"/callback/fraude", json=result, headers=headers)
+            response.raise_for_status()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error sending results to external API: {e}")
+
+    except Exception as e:
+        print(e)
+        total_ko += 1
+        result = {"docid": ident, "success": "False", "message": "500, erreur sur le document"}
+
+    return JSONResponse(content=result)
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
