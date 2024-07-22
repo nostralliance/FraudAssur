@@ -21,4 +21,4 @@ pré-requis :
 J'ai ajouter a l'intérieur les librairies :
 - pydantic pour les classe utilisateurs de la base de donnée
 - requests pour requeter sur l'api externe
-- hashlib et hmac pour hacher les mot de passe 
+- hashlib et hmac pour hacher les mots de passes

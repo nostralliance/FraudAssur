@@ -11,10 +11,13 @@ from datetime import datetime
 import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS
+from PIL import Image, ExifTags
+
 import fitz  # PyMuPDF
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 import pathlib
+import json
 
 
 
@@ -29,38 +32,87 @@ def detect_file_type(data):
     else:
         raise HTTPException(status_code=400, detail="Format de fichier non supporté")
 
-def detect_modification_creation(pdf_path):
-    extension = os.path.splitext(pdf_path)[1].lower()
+def detect_modification_creation(file_path):
+    extension = os.path.splitext(file_path)[1].lower()
+    
+    def parse_date(date_str, format_str):
+        """Parse a date string with a given format string."""
+        if date_str:
+            try:
+                return datetime.strptime(date_str, format_str)
+            except ValueError:
+                print(f"Erreur de format de date : {date_str}")
+        return None
+    
     if extension == '.pdf':
-        # Ouvrir le fichier PDF
-        document = fitz.open(pdf_path)
+        try:
+            # Ouvrir le fichier PDF
+            document = fitz.open(file_path)
 
-        # Extraire les métadonnées
-        metadata = document.metadata
-        
-        # Vérifier la présence de métadonnées suspects
-        for key, value in metadata.items():
-            if isinstance(value, bytes):
-                value = value.decode("utf-8", "ignore")
-        
-        # Extraction des dates de création et de modification
-        creation_date_str = metadata.get('creationDate', '')
-        modification_date_str = metadata.get('modDate', '')
-        # Conversion des dates au format datetime
-        creation_date = datetime.strptime(creation_date_str[2:16], "%Y%m%d%H%M%S")
-        print(creation_date)
-        modification_date = datetime.strptime(modification_date_str[2:16], "%Y%m%d%H%M%S")
-        print(modification_date)
+            # Extraire les métadonnées
+            metadata = document.metadata
 
-        # Vérification de la différence entre les dates
-        if modification_date >= creation_date + relativedelta(months=1):
-            print("la date de modification est supérieur a 1 mois")
-            return True
-        else:
-            print("la date de modification est pas supérieur a 1 mois")
+            # Nettoyer les métadonnées et extraire les dates
+            creation_date_str = metadata.get('creationDate', '')
+            modification_date_str = metadata.get('modDate', '')
+
+            # Enlever le préfixe 'D:' et analyser les dates
+            creation_date = parse_date(creation_date_str[2:] if creation_date_str.startswith("D:") else creation_date_str, "%Y%m%d%H%M%S")
+            modification_date = parse_date(modification_date_str[2:] if modification_date_str.startswith("D:") else modification_date_str, "%Y%m%d%H%M%S")
+
+            if creation_date and modification_date:
+                if modification_date >= creation_date + relativedelta(months=1):
+                    print("La date de modification est supérieure à 1 mois")
+                    return True
+                else:
+                    print("La date de modification n'est pas supérieure à 1 mois")
+                    return False
+            else:
+                print("Erreur de format de date pour PDF")
+                return False
+        
+        except Exception as e:
+            print(f"Erreur lors de l'extraction des métadonnées du PDF : {e}")
             return False
- 
 
+    elif extension in ('.jpg', '.jpeg', '.png'):
+        try:
+            # Ouvrir l'image et extraire les métadonnées Exif
+            with Image.open(file_path) as img:
+                image_exif = img._getexif()
+
+                if image_exif:
+                    metadonne = {ExifTags.TAGS.get(tag, tag): value for tag, value in image_exif.items()}
+                    
+                    # Extraire les dates si elles sont présentes
+                    date_creation = metadonne.get('DateTimeOriginal', None)
+                    date_modification = metadonne.get('DateTime', None)
+
+                    # Analyser les dates
+                    creation_date_img = parse_date(date_creation, '%Y:%m:%d %H:%M:%S')
+                    print("la date de création est :",creation_date_img)
+                    modification_date_img = parse_date(date_modification, '%Y:%m:%d %H:%M:%S')
+                    print("la date de modif est :", modification_date_img)
+                    if creation_date_img and modification_date_img:
+                        if modification_date_img >= creation_date_img + relativedelta(months=1):
+                            print("La date de modification est supérieure à 1 mois")
+                            return True
+                        else:
+                            print("La date de modification n'est pas supérieure à 1 mois")
+                            return False
+                    else:
+                        print("date de création non trouver sur l'image")
+                        return False
+                else:
+                    print("Aucune métadonnée trouvée pour cette image.")
+                    return False
+
+        except Exception as e:
+            print(f"Erreur lors de l'extraction des métadonnées de l'image : {e}")
+            return False
+    else:
+        print("Type de fichier non pris en charge.")
+        return False
 
 def detecter_fraude_documentaire(pdf_path):
     """
@@ -93,7 +145,7 @@ def detecter_fraude_documentaire(pdf_path):
                  
 
 
-    if extension in ('.jpg', '.jpeg', '.png'):
+    elif extension in ('.jpg', '.jpeg', '.png'):
         liste_img=[]
         metadonne={}
         with Image.open(pdf_path) as img:
@@ -107,7 +159,7 @@ def detecter_fraude_documentaire(pdf_path):
                     metadonne[tag_name]=value
                 print(metadonne)
                 if 'Software' in metadonne:
-                    liste_img.append(metadata['Software'])
+                    liste_img.append(metadonne['Software'])
                     #liste.append(metadata['creator'])
                     resultat = ' '.join(liste_img)
                     regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
