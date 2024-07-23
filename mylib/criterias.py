@@ -98,7 +98,7 @@ def detect_modification_creation(file_path):
                             # Analyser les dates
                             creation_date_img = datetime.strptime(date_creation, "%Y:%m:%d %H:%M:%S")
                             modification_date_img = datetime.strptime(date_modification, "%Y:%m:%d %H:%M:%S")
-
+                            
                             # Comparer les dates
                             if modification_date_img >= creation_date_img + relativedelta(months=1):
                                 print("La date de modification est supérieure à 1 mois")
