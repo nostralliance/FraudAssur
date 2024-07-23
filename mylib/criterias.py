@@ -35,11 +35,15 @@ def detect_file_type(data):
 def detect_modification_creation(file_path):
     extension = os.path.splitext(file_path)[1].lower()
     
-    def parse_date(date_str, format_str):
-        """Parse a date string with a given format string."""
+    def parse_date(date_str):
         if date_str:
             try:
-                return datetime.strptime(date_str, format_str)
+                # Enlever le préfixe 'D:' et le décalage horaire
+                date_str = date_str[2:]  # Enlever le 'D:'
+                date_str = date_str.split('+')[0]  # Enlever le décalage horaire
+                
+                # Analyser la date
+                return datetime.strptime(date_str, "%Y%m%d%H%M%S")
             except ValueError:
                 print(f"Erreur de format de date : {date_str}")
         return None
@@ -54,11 +58,12 @@ def detect_modification_creation(file_path):
 
             # Nettoyer les métadonnées et extraire les dates
             creation_date_str = metadata.get('creationDate', '')
+            print(creation_date_str)
             modification_date_str = metadata.get('modDate', '')
-
-            # Enlever le préfixe 'D:' et analyser les dates
-            creation_date = parse_date(creation_date_str[2:] if creation_date_str.startswith("D:") else creation_date_str, "%Y%m%d%H%M%S")
-            modification_date = parse_date(modification_date_str[2:] if modification_date_str.startswith("D:") else modification_date_str, "%Y%m%d%H%M%S")
+            print(modification_date_str)
+            # Analyser les dates
+            creation_date = parse_date(creation_date_str)
+            modification_date = parse_date(modification_date_str)
 
             if creation_date and modification_date:
                 if modification_date >= creation_date + relativedelta(months=1):
@@ -87,22 +92,27 @@ def detect_modification_creation(file_path):
                     # Extraire les dates si elles sont présentes
                     date_creation = metadonne.get('DateTimeOriginal', None)
                     date_modification = metadonne.get('DateTime', None)
+                    
+                    if date_creation and date_modification:
+                        try:
+                            # Analyser les dates
+                            creation_date_img = datetime.strptime(date_creation, "%Y:%m:%d %H:%M:%S")
+                            modification_date_img = datetime.strptime(date_modification, "%Y:%m:%d %H:%M:%S")
 
-                    # Analyser les dates
-                    creation_date_img = parse_date(date_creation, '%Y:%m:%d %H:%M:%S')
-                    print("la date de création est :",creation_date_img)
-                    modification_date_img = parse_date(date_modification, '%Y:%m:%d %H:%M:%S')
-                    print("la date de modif est :", modification_date_img)
-                    if creation_date_img and modification_date_img:
-                        if modification_date_img >= creation_date_img + relativedelta(months=1):
-                            print("La date de modification est supérieure à 1 mois")
-                            return True
-                        else:
-                            print("La date de modification n'est pas supérieure à 1 mois")
+                            # Comparer les dates
+                            if modification_date_img >= creation_date_img + relativedelta(months=1):
+                                print("La date de modification est supérieure à 1 mois")
+                                return True
+                            else:
+                                print("La date de modification n'est pas supérieure à 1 mois")
+                                return False
+                        except ValueError as e:
+                            print(f"Erreur lors de l'analyse des dates : {e}")
                             return False
                     else:
-                        print("date de création non trouver sur l'image")
+                        print("Date de création ou date de modification non trouvée sur l'image.")
                         return False
+
                 else:
                     print("Aucune métadonnée trouvée pour cette image.")
                     return False
