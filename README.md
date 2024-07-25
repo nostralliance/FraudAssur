@@ -22,3 +22,20 @@ J'ai ajouter a l'intérieur les librairies :
 - pydantic pour les classe utilisateurs de la base de donnée
 - requests pour requeter sur l'api externe
 - hashlib et hmac pour hacher les mots de passes
+
+
+
+
+
+
+# Comment faire fonctionner le script api_document : 
+tout d'abord tu peut remarquer que deux dossier sont présent l'un qui s'appel data_fantome, c'est ici que se trouve les ".zip" a traiter.
+une fois traiter elle se range automatiquement en fonction des critères dans le dossier dataset_result qui est divisé en plusieurs dossier chacun correspondant a un critère
+
+se rendre dans le script de l'api pour modifier la variable folder_path qui correspond au dossier a traiter
+lancer l'API
+se rendre sur : localhost:8001/docs
+cliquez sur "try it"
+puis execute
+
+et attendre que le script opère sur les documents du dossier.

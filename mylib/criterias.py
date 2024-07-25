@@ -239,7 +239,7 @@ def dateferiee(pngText):
     regex_devis = r'[Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]'
     dateListCarteTP = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
-    print("titre trouver :",dateListBucco)
+    # print("titre trouver :",dateListBucco)
     result = False
     #if len(dateListCarteTP)>0 or len(): # Vérifier le regex et enlever ce qui a avant pour tester la capture du regex 
     if len(dateListBucco) == 0:
