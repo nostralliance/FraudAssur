@@ -32,6 +32,12 @@ def detect_file_type(data):
     else:
         raise HTTPException(status_code=400, detail="Format de fichier non supporté")
 
+import os
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import fitz  # PyMuPDF
+from PIL import Image, ExifTags
+
 def detect_modification_creation(file_path):
     extension = os.path.splitext(file_path)[1].lower()
     
@@ -40,10 +46,14 @@ def detect_modification_creation(file_path):
             try:
                 # Enlever le préfixe 'D:' et le décalage horaire
                 date_str = date_str[2:]  # Enlever le 'D:'
-                date_str = date_str.split('+')[0]  # Enlever le décalage horaire
+                date_str = date_str.split('+')[0]
+                date_str = date_str.split('Z')[0]
+                
+                # Garder seulement la partie date
+                date_str = date_str[:8]
                 
                 # Analyser la date
-                return datetime.strptime(date_str, "%Y%m%d%H%M%S")
+                return datetime.strptime(date_str, "%Y%m%d").date()
             except ValueError:
                 print(f"Erreur de format de date : {date_str}")
         return None
@@ -61,6 +71,7 @@ def detect_modification_creation(file_path):
             print(creation_date_str)
             modification_date_str = metadata.get('modDate', '')
             print(modification_date_str)
+            
             # Analyser les dates
             creation_date = parse_date(creation_date_str)
             modification_date = parse_date(modification_date_str)
@@ -95,9 +106,9 @@ def detect_modification_creation(file_path):
                     
                     if date_creation and date_modification:
                         try:
-                            # Analyser les dates
-                            creation_date_img = datetime.strptime(date_creation, "%Y:%m:%d %H:%M:%S")
-                            modification_date_img = datetime.strptime(date_modification, "%Y:%m:%d %H:%M:%S")
+                            # Analyser les dates et garder seulement la partie date
+                            creation_date_img = datetime.strptime(date_creation, "%Y:%m:%d %H:%M:%S").date()
+                            modification_date_img = datetime.strptime(date_modification, "%Y:%m:%d %H:%M:%S").date()
                             
                             # Comparer les dates
                             if modification_date_img >= creation_date_img + relativedelta(months=1):
@@ -123,6 +134,7 @@ def detect_modification_creation(file_path):
     else:
         print("Type de fichier non pris en charge.")
         return False
+
 
 def detecter_fraude_documentaire(pdf_path):
     """
