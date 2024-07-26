@@ -45,7 +45,7 @@ no_suspicion = r"C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAs
 
 
 
-folder_path = r"C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\data_fantome\Dentaire 10"
+folder_path = r"C:\Users\pierrontl\OneDrive - GIE SIMA\Documents\GitHub\FraudAssur\pdf_test\POUR CONTROLE ET AVIS  N164164 LIORAH CHETRIT"
 
 
 
@@ -83,11 +83,13 @@ async def process_files():
                     total_meta += 1
                     result = {"filename": filename, "success": "True", "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
                     shutil.copy(file_path, meta_folder)
+                    break
                 elif criterias.detect_modification_creation(pdf_file_path):
                     total_ok += 1
                     total_modification_creation += 1
                     result = {"filename": filename, "success": "True", "message": "La modification du document est supérieure à 1 mois par rapport à la date de création"}
                     shutil.copy(file_path, date_crea_mod_folder)
+                    break
 
                 else:
                     pages = None
@@ -144,7 +146,7 @@ async def process_files():
                             result = {"filename": filename, "success": "False", "message": "Erreur sur le document"}
                             break
 
-                    os.remove(pdf_file_path)
+                    shutil.copy(pdf_file_path, no_suspicion)
 
             elif file_extension in ['jpg', 'jpeg', 'png']:
                 try:
@@ -152,42 +154,51 @@ async def process_files():
                         total_ok += 1
                         total_meta += 1
                         result = {"filename": filename, "success": "True", "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                        break
                     elif criterias.detect_modification_creation(file_path):
                         total_ok += 1
                         total_modification_creation += 1
                         result = {"filename": filename, "success": "True", "message": "La modification du document est supérieure à 1 mois par rapport à la date de création"}
+                        break
                     else:
                         png_text = functions.img2text(file_path)
                         if criterias.finessfaux(png_text):
                             total_ok += 1
                             total_finessfaux += 1
                             result = {"filename": filename, "success": "True", "message": "Numéro finess faux trouvé sur ce document"}
+                            break
                         elif criterias.adherentssoussurveillance(png_text):
                             total_ok += 1
                             total_adherentssoussurveillance += 1
                             result = {"filename": filename, "success": "True", "message": "Adhérent sous surveillance trouvé sur ce document"}
+                            break
                         elif criterias.refarchivesfaux(png_text):
                             total_ok += 1
                             total_refarchivesfaux += 1
                             result = {"filename": filename, "success": "True", "message": "Fausse référence d'archivage trouvée sur ce document"}
+                            break
                         elif criterias.rononsoumis(png_text):
                             total_ok += 1
                             total_rononsoumis += 1
                             result = {"filename": filename, "success": "True", "message": "Régime obligatoire non soumis trouvé sur ce document"}
+                            break
                         else:
                             png_text_list = functions.img2textlist(file_path)
                             if criterias.date_compare(png_text_list):
                                 total_ok += 1
                                 total_datecompare += 1
                                 result = {"filename": filename, "success": "True", "message": "Date de règlement supérieure à la date de soins trouvée sur ce document"}
+                                break
                             elif criterias.medical_materiel(png_text):
                                 total_ok += 1
                                 total_medical_materiel += 1
                                 result = {"filename": filename, "success": "True", "message": "Montant supérieur à 150 euros sur ce document médical"}
+                                break
                             elif criterias.dateferiee(png_text):
                                 total_ok += 1
                                 total_dateferiee += 1
                                 result = {"filename": filename, "success": "True", "message": "Date fériée trouvée sur ce document"}
+                                break
                             else:
                                 total_ko += 1
                                 result = {"filename": filename, "success": "False", "message": "Pas de suspicion de fraude sur ce document"}

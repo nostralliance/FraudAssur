@@ -29,10 +29,10 @@ J'ai ajouter a l'intérieur les librairies :
 
 
 # Comment faire fonctionner le script api_document : 
-tout d'abord tu peut remarquer que deux dossier sont présent l'un qui s'appel data_fantome, c'est ici que se trouve les ".zip" a traiter.
+tout d'abord deux dossier sont présent l'un qui s'appel data_fantome, c'est ici que se trouve les ".zip" a traiter.
 une fois traiter elle se range automatiquement en fonction des critères dans le dossier dataset_result qui est divisé en plusieurs dossier chacun correspondant a un critère
 
-se rendre dans le script de l'api pour modifier la variable folder_path qui correspond au dossier a traiter
+se rendre dans le script de l'api ( Api_traite_document) pour modifier la variable folder_path qui correspond au dossier a traiter
 lancer l'API
 se rendre sur : localhost:8001/docs
 cliquez sur "try it"

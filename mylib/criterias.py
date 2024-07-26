@@ -84,7 +84,7 @@ def detect_modification_creation(file_path):
                     print("La date de modification n'est pas supérieure à 1 mois")
                     return False
             else:
-                print("Erreur de format de date pour PDF")
+                print("Il manque une date pour comparaison")
                 return False
         
         except Exception as e:
