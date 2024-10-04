@@ -247,65 +247,71 @@ def replace_last_9(text):
 
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
-    pattern= r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
+    pattern = r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
     regex_devis = r'[Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]'
     dateListCarteTP = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
-    # print("titre trouver :",dateListBucco)
+
+    # Vérifier la présence de "AMC" ou "amc" dans le texte
+    amc_present = re.search(r'AMC|amc', pngText) is not None
+
     result = False
-    #if len(dateListCarteTP)>0 or len(): # Vérifier le regex et enlever ce qui a avant pour tester la capture du regex 
+
+
     if len(dateListBucco) == 0:
         # On récupère la liste des dates dans le texte
         dateList = re.findall(r'([0-3]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
         dateList = list(dict.fromkeys(dateList))
+        print("la datelistferiee est :", dateList)
+
         # On récupère la liste des indices sur Alsace-Moselle dans le texte
         cpList = re.findall(r'[5-6]7\d{3}', pngText)
         cityList = re.findall(r'[a|A]lsace|[m|M]oselle', pngText)
 
         # On initialise le résultat
-        
-
-        for dateSplit in dateList :
+        for dateSplit in dateList:
             dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
 
-            # Si la date est inférieure à la durée maximale de remboursement,        
-            if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS :
+            # Si la date est inférieure à la durée maximale de remboursement
+            if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS:
 
                 # Si on est en Alsace-Moselle
-                if len(cpList) > 0 or len(cityList) > 0 :
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle") :
-                        result = True
+                if len(cpList) > 0 or len(cityList) > 0:
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
+                        if not amc_present:  # Si "AMC" n'est PAS présent
+                            result = True  # Suspicion de fraude si jour férié et pas d'AMC
                         break
-                else :
-                    # Si c'est un jour férié en Métropole, on suspecte une fraude
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole") :
-                        result = True
+                else:
+                    # Si c'est un jour férié en Métropole
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
+                        if not amc_present:  # Si "AMC" n'est PAS présent
+                            result = True  # Suspicion de fraude si jour férié et pas d'AMC
                         break
-        
-    return result
 
+    return result
 
 def medical_materiel(pngText):
 
     # RegEx pour détecter les mots-clés médicaux et les montants
     matches = re.findall(r'(apnée|apnee|APNEE|PERFUSION|perfusion|LOCATION|location|PPC|ppc)', pngText)
-    detect_montant = re.findall(r'(?i)(?:part mutuelle|net [àa] payer|a[.]?[ ]?m[.]?[ ]?c|Votre d[ûu]|ticket mod[ée]rateur)\s*:? ?(\d+[ ]?[.,][ ]?\d+)', pngText)
+    detect_montant = re.findall(r'(?i)(?:part mutuelle|net [àa] payer|a[.]?[ ]?m[.]?[ ]?c|Votre d[ûu]|ticket mod[ée]rateur)\s*:? ?(\d+[ ]?[.,][ ]?\d{2})', pngText)
 
-    if matches: 
+    if matches:
         if detect_montant:
             print("Les montants détectés sont :", detect_montant)
 
             for montant in detect_montant:
                 #supprimer les espaces
                 montant = montant.replace(" ", "")
-                montant_float = float(montant.replace(",", "."))
-                print("Le montant mutuelle détecté est :", montant)
+                montant_float = float(montant.replace(",", ".")) # sa peut etre aussi un point et non une virgule
+                print("Le montant mutuelle détecté sur facture medical est de :", montant)
 
                 if montant_float> 150.00:
+                    print("Le montant est supérieur à 150 EUR")
                     return True
-                    # print("Le montant est supérieur à 150 EUR")
                     break
                 else:
+                    print("Le montant est supérieur à 150 EUR")
                     return False
         else:
             return False
@@ -344,7 +350,7 @@ def finessfaux(pngText):
     # On recherche les indices relatifs à la présence d'un numéro finess dans la page
     resultList = re.findall(r"|".join(str(s) for s in finessList), pngText)
     
-    print("la result liste est :",resultList)
+    print("la FinessList est :",resultList)
     if len(resultList) > 0 :
         return True
 
@@ -360,7 +366,7 @@ def adherentssoussurveillance(pngText):
     usersList = data["NOM Complet"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
-    # print(resultList)
+    print("la ListeAdherent est :",resultList)
 
     if len(resultList) > 0 :
         return True
