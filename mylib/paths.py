@@ -1,6 +1,8 @@
 import pathlib
-rootPath = pathlib.Path('images/')
+rootPath = pathlib.Path('DMR_fraude/')
 tmpDir = '/depot/TMP/'
+path_surveillance = '/MMC/depot/TMP/data'
+rootPath_img = pathlib.Path('images/')
 tmpDirImg = '/depot/image/'
 dateFerieeDir = '/check/date_feriee/'
 aucuneDir ='/check/aucune_fraude/'

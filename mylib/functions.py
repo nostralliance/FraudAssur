@@ -11,37 +11,46 @@ from PIL import Image
 # On instancie l'extracteur OCR
 reader = easyocr.Reader(['en','fr'], gpu=False)
 
-def pdf2img(pdfFile: str ,pages: Tuple = None):
+import shutil
+
+def pdf2img(pdfFile: str, pages: Tuple = None):
     # On charge le document
     pdf = fitz.open(pdfFile)
     # On détermine la liste des fichiers générés
     pngFiles = []
     # Pour chaque page du pdf
-    for pageId in range(pdf.page_count):
-
-        if str(pages) != str(None):
-            if str(pageId) not in str(pages):
-                continue
-
-        # On récupère la page courante
-        page = pdf[pageId]
-        # On convertit la page courante
-        pageMatrix = fitz.Matrix(2, 2)
-        pagePix = page.get_pixmap(matrix=pageMatrix, alpha=False)
-        # On exporte la page générée
-        pngPath = str(paths.rootPath) + paths.tmpDir + os.path.basename(str(pdfFile).split('.')[0])
-        # Si le répertoire dédié au pdf n'existe pas encore, on le crée
-        if not os.path.exists(pngPath):
-            os.makedirs(pngPath)
-
-        pngFile = pngPath +"_"+ f"page{pageId+1}.png"
-        pagePix.save(pngFile)
-        pngFiles.append(pngFile)
-
-    pdf.close()
-    # On retourne la liste des pngs générés
-    return pngFiles
+    pngPath = str(paths.rootPath_img) + str(paths.tmpDirImg) + os.path.basename(str(pdfFile).split('.')[0])
     
+    try:
+        for pageId in range(pdf.page_count):
+            if str(pages) != str(None):
+                if str(pageId) not in str(pages):
+                    continue
+
+            # On récupère la page courante
+            page = pdf[pageId]
+            # On convertit la page courante
+            pageMatrix = fitz.Matrix(2, 2)
+            pagePix = page.get_pixmap(matrix=pageMatrix, alpha=False)
+            # On exporte la page générée
+
+            # Si le répertoire dédié au pdf n'existe pas encore, on le crée
+            if not os.path.exists(pngPath):
+                os.makedirs(pngPath)
+
+            pngFile = pngPath + "_" + f"page{pageId+1}.png"
+            pagePix.save(pngFile)
+            pngFiles.append(pngFile)
+
+        pdf.close()
+
+        # On retourne la liste des pngs générés
+        return pngFiles
+
+    finally:
+        # On supprime le répertoire et son contenu après le traitement
+        if os.path.exists(pngPath):
+            shutil.rmtree(pngPath)
 
 def convert_to_png(input_path, output_path):
     try:

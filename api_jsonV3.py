@@ -2,9 +2,9 @@
 #-----------------------------------------------------------------Import des librairie------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+import shutil
 import os
-from mylib import functions, criterias
+from mylib import functions, criterias, paths
 import signal
 from datetime import datetime
 from pydantic import BaseModel
@@ -19,8 +19,6 @@ from fastapi.responses import JSONResponse
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------------Configuration de l'API externe------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 
 OCR_API_URL = "https://kfjqcvjg55254bjskf45s23kg4sg.giesima.fr"  # Remplacez par l'URL de votre API
 OCR_API_LOGIN = "apin@fraude.fr"
@@ -144,8 +142,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
     
     ident = request.idm
     file = request.url
-    results = []
-    
+        
     print(f'Les noms de fichiers sont : {file}')
     try:
         if not os.path.exists(file):
@@ -229,7 +226,8 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         result = {"docid": ident, "success": "False", "message": "500, erreur sur le document"}
                         break
 
-                os.remove(pdf_file_path)
+            shutil.rmtree(str(paths.rootPath_img))
+            os.remove(str(pdf_file_path))
 
         elif file_extension in ['jpg', 'jpeg', 'png']:
             print("OCR fichier image " + file)
@@ -240,7 +238,6 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                     total_meta += 1
                     result = {"docid": ident, "success": "True", "message": "la provenance du document est suspicieuse : photoshop, canva, excel ou word"}
 
-                
                 elif criterias.detect_modification_creation(file):
                     total_ok += 1
                     total_modification_creation += 1
@@ -251,15 +248,16 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                     if criterias.finessfaux(png_text):
                         total_ok += 1
                         total_finessfaux += 1
-                        result = {"docid": ident, "success": "True", "message": "numéro finess sur facture"}
+                        result = {"docid": ident, "success": "True", "message": "Numéro finess faux a été trouvé sur cette facture"}
+
                     elif criterias.adherentssoussurveillance(png_text):
                         total_ok += 1
                         total_adherentssoussurveillance += 1
-                        result = {"docid": ident, "success": "True", "message": "adherent suspicieux"}
+                        result = {"docid": ident, "success": "True", "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
                     elif criterias.refarchivesfaux(png_text):
                         total_ok += 1
                         total_refarchivesfaux += 1
-                        result = {"docid": ident, "success": "True", "message": "reference archivage fausse sur facture"}
+                        result = {"docid": ident, "success": "True", "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
                     elif criterias.rononsoumis(png_text):
                         total_ok += 1
                         total_rononsoumis += 1
@@ -277,14 +275,14 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         elif criterias.dateferiee(png_text):
                             total_ok += 1
                             total_dateferiee += 1
-                            result = {"docid": ident, "success": "True", "message": "date fériée sur facture"}
+                            result = {"docid": ident, "success": "True", "message": "Une date fériée a été trouver sur la facture"}
                         else:
                             total_ko += 1
                             result = {"docid": ident, "success": "False", "message": "Pas de suspicion de fraude sur cette facture"}
             except Exception as e:
                 print(f"Erreur lors du traitement du fichier image : {e}")
                 total_ko += 1
-                result = {"docid": ident, "success": "False", "message": "Erreur lors du traitement de l'image"}
+                result = {"docid": ident, "success": "False", "message": f"Erreur lors du traitement de l'image{e}"}
         
 
 

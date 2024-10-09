@@ -32,12 +32,6 @@ def detect_file_type(data):
     else:
         raise HTTPException(status_code=400, detail="Format de fichier non supporté")
 
-import os
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-import fitz  # PyMuPDF
-from PIL import Image, ExifTags
-
 def detect_modification_creation(file_path):
     extension = os.path.splitext(file_path)[1].lower()
     
@@ -248,17 +242,14 @@ def replace_last_9(text):
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
     pattern = r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
-    regex_devis = r'[Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]'
+    regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
     dateListCarteTP = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
-
-    # Vérifier la présence de "AMC" ou "amc" dans le texte
-    amc_present = re.search(r'AMC|amc', pngText) is not None
 
     result = False
 
 
-    if len(dateListBucco) == 0:
+    if len(dateListBucco) == 0: # Si le regex n'a pas trouver de mot dans le texte
         # On récupère la liste des dates dans le texte
         dateList = re.findall(r'([0-3]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
         dateList = list(dict.fromkeys(dateList))
@@ -278,14 +269,12 @@ def dateferiee(pngText):
                 # Si on est en Alsace-Moselle
                 if len(cpList) > 0 or len(cityList) > 0:
                     if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
-                        if not amc_present:  # Si "AMC" n'est PAS présent
-                            result = True  # Suspicion de fraude si jour férié et pas d'AMC
+                        result = True
                         break
                 else:
                     # Si c'est un jour férié en Métropole
                     if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
-                        if not amc_present:  # Si "AMC" n'est PAS présent
-                            result = True  # Suspicion de fraude si jour férié et pas d'AMC
+                        result = True
                         break
 
     return result
@@ -341,7 +330,7 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    lien_surveillance = str(paths.rootPath) + '/surveillance.xlsx'
+    lien_surveillance = str(paths.rootPath) + str(paths.path_surveillance) + '/surveillance.xlsx'
     #print(lien_surveillance)
     data = pd.read_excel(lien_surveillance, sheet_name="finess")
     finessList = data["NUMERO FINESS"].tolist()
@@ -361,7 +350,7 @@ def finessfaux(pngText):
 
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    lien_surveillance = str(paths.rootPath) + '/surveillance.xlsx'
+    lien_surveillance = str(paths.rootPath) + str(paths.path_surveillance) + '/surveillance.xlsx'
     data = pd.read_excel(lien_surveillance, sheet_name="Adhérents")
     usersList = data["NOM Complet"].tolist()
     # print(usersList)
