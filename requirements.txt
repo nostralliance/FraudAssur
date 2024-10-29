@@ -1,0 +1,9 @@
+PyMuPDF
+easyocr==1.7.1
+pandas
+jours-feries-France
+fastapi
+requests
+python-multipart
+uvicorn
+openpyxl
