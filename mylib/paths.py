@@ -1,5 +1,5 @@
 import pathlib
-rootPath = pathlib.Path('DMR_fraude/')
+rootPath = pathlib.Path('GitHub/detection/DMR_fraude')
 tmpDir = '/depot/TMP/'
 path_surveillance = '/MMC/depot/TMP/data'
 rootPath_img = pathlib.Path('images/')

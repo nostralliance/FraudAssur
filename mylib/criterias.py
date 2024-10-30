@@ -330,9 +330,9 @@ def rononsoumis(pngText):
 
 def finessfaux(pngText):
     # On récupère la liste des Numéros finess des adhérents suspects
-    lien_surveillance = str(paths.rootPath) + str(paths.path_surveillance) + '/surveillance.xlsx'
+    lien_surveillance = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/surveillance.xlsx'
     #print(lien_surveillance)
-    data = pd.read_excel(lien_surveillance, sheet_name="finess")
+    data = pd.read_excel(lien_surveillance, sheet_name="FINESS")
     finessList = data["NUMERO FINESS"].tolist()
     # print(finessList)
     # print("|".join(str(s) for s in finessList))
@@ -350,9 +350,9 @@ def finessfaux(pngText):
 
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
-    lien_surveillance = str(paths.rootPath) + str(paths.path_surveillance) + '/surveillance.xlsx'
+    lien_surveillance = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/surveillance.xlsx'
     data = pd.read_excel(lien_surveillance, sheet_name="Adhérents")
-    usersList = data["NOM Complet"].tolist()
+    usersList = data["NOM COMPLET"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
     print("la ListeAdherent est :",resultList)

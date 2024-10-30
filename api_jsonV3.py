@@ -111,7 +111,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 class PDFRequest(BaseModel):
     url: str
-    idm: Union[str, int]
+    docid: Union[str, int]
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -140,7 +140,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
     global total_modification_creation, total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
     total_factures += 1
     
-    ident = request.idm
+    ident = request.docid
     file = request.url
         
     print(f'Les noms de fichiers sont : {file}')
@@ -226,7 +226,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         result = {"docid": ident, "success": "False", "message": "500, erreur sur le document"}
                         break
 
-            shutil.rmtree(str(paths.rootPath_img))
+            # shutil.rmtree(str(paths.rootPath_img))
             os.remove(str(pdf_file_path))
 
         elif file_extension in ['jpg', 'jpeg', 'png']:
@@ -345,4 +345,4 @@ signal.signal(signal.SIGTERM, print_statistics)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run("api_test:app", host="0.0.0.0", port=8001)
