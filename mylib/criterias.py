@@ -235,21 +235,16 @@ def replace_last_9(text):
 #     else:
 #         return False
 
-
-
-
-
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
-    pattern = r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
+    pattern = r"[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4}) | valable [Jj]usqu'?au ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
     regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
-    dateListCarteTP = re.findall(pattern, pngText)
+    dateListTP_Optic = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
 
     result = False
 
-
-    if len(dateListBucco) == 0: # Si le regex n'a pas trouver de mot dans le texte
+    if len(dateListBucco) == 0 and len(dateListTP_Optic) == 0: # Si le regex n'a pas trouver de mot dans le texte
         # On récupère la liste des dates dans le texte
         dateList = re.findall(r'([0-3]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
         dateList = list(dict.fromkeys(dateList))
@@ -264,20 +259,75 @@ def dateferiee(pngText):
             dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
 
             # Si la date est inférieure à la durée maximale de remboursement
-            if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS:
+            if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS and relativedelta(date.today(), dateFormat).years >= 0:
 
                 # Si on est en Alsace-Moselle
                 if len(cpList) > 0 or len(cityList) > 0:
                     if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
+                        print(relativedelta(date.today(), dateFormat).years)
+                        print(dateFormat)
                         result = True
                         break
                 else:
                     # Si c'est un jour férié en Métropole
                     if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
+                        print(relativedelta(date.today(), dateFormat).years)
+                        print(dateFormat)
                         result = True
                         break
 
     return result
+
+
+# def dateferiee(pngText):
+#     # Condition pour exclure les cartes TP
+#     pattern = r'[Dd][Uu]\ 01/01/(\d{4})\ [Aa][Uu]\ (\d{2})/(\d{2})/(\d{4})'
+#     regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
+#     dateListCarteTP = re.findall(pattern, pngText)
+#     dateListBucco = re.findall(regex_devis, str(pngText))
+
+#     result = False
+
+#     if len(dateListBucco) == 0:  # Si le regex n'a pas trouvé de mot dans le texte
+#         # On récupère la liste des dates dans le texte
+#         dateList = re.findall(r'([0-3][0-9])[/-](1[0-2]|0[1-9])[/-](\d{4})', pngText)
+#         dateList = list(dict.fromkeys(dateList))  # Suppression des doublons
+#         print("les dates trouvée sont :", dateList)
+
+#         # Exclure les dates précédées de "valable jusqu'au" avec ou sans apostrophe et deux-points
+#         exclusion_pattern = r"valable [Jj]usqu'?au ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
+#         excluded_dates = re.findall(exclusion_pattern, pngText)
+
+#         # Convertir les dates exclues au même format que dateList pour pouvoir exclure les dates
+#         excluded_dates_cleaned = [f"{day}/{month}/{year}" for day, month, year in excluded_dates]
+
+#         # Retirer les dates à exclure de la liste des dates à traiter
+#         dateList_cleaned = [date for date in dateList if f"{date[0]}/{date[1]}/{date[2]}" not in excluded_dates_cleaned]
+#         print("les dates après exclusion sont :", dateList_cleaned)
+
+#         # On récupère la liste des indices sur Alsace-Moselle dans le texte
+#         cpList = re.findall(r'[5-6]7\d{3}', pngText)
+#         cityList = re.findall(r'[Aa]lsace|[Mm]oselle', pngText)
+
+#         # On initialise le résultat
+#         for dateSplit in dateList_cleaned:
+#             dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
+
+#             # Si la date est inférieure à la durée maximale de remboursement
+#             if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS:
+#                 print("date format :", dateFormat)
+#                 # Si on est en Alsace-Moselle
+#                 if len(cpList) > 0 or len(cityList) > 0:
+#                     if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
+#                         result = True
+#                         break
+#                 else:
+#                     # Si c'est un jour férié en Métropole
+#                     if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
+#                         result = True
+#                         break
+
+#     return result
 
 def medical_materiel(pngText):
 
@@ -339,7 +389,7 @@ def finessfaux(pngText):
     # On recherche les indices relatifs à la présence d'un numéro finess dans la page
     resultList = re.findall(r"|".join(str(s) for s in finessList), pngText)
     
-    print("la FinessList est :",resultList)
+    # print("la FinessList est :",resultList)
     if len(resultList) > 0 :
         return True
 
@@ -355,7 +405,7 @@ def adherentssoussurveillance(pngText):
     usersList = data["NOM COMPLET"].tolist()
     # print(usersList)
     resultList = re.findall("|".join(usersList).upper(), pngText.upper())
-    print("la ListeAdherent est :",resultList)
+    # print("la ListeAdherent est :",resultList)
 
     if len(resultList) > 0 :
         return True
@@ -475,7 +525,7 @@ def refarchivesfaux(pngText):
             return False
         else:
             dateList = re.findall(r'([0-2]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
-            print("Dates trouvées :", dateList)
+            # print("Dates trouvées :", dateList)
 
             for refSplit in refList:
                 currentResult = False
