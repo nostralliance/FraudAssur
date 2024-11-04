@@ -237,7 +237,7 @@ def replace_last_9(text):
 
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
-    pattern = r"[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4}) | valable [Jj]usqu'?au ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
+    pattern = r"[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4}) | [vV][aA][lL][aA][bB][lL][eE] [Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
     regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
     dateListTP_Optic = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
