@@ -152,7 +152,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
             binary_data = file_handle.read()
 
         file_extension = criterias.detect_file_type(binary_data)
-        result = {"docid": ident, "success": "False", "message": "Pas de suspicion de fraude sur cette facture"}  # Default result
+        result = {"docid": ident, "success": False, "message": "Pas de suspicion de fraude sur cette facture"}  # Default result
 
         if file_extension == 'pdf':
             pdf_file_path = f'temp_{ident}.pdf'
@@ -162,12 +162,12 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
             if criterias.detecter_fraude_documentaire(pdf_file_path):
                 total_ok += 1
                 total_meta += 1
-                result = {"docid": ident, "success": "True", "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                result = {"docid": ident, "success": True, "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
 
             elif criterias.detect_modification_creation(pdf_file_path):
                 total_ok += 1
                 total_modification_creation += 1
-                result = {"docid": ident, "success": "True", "message": "La modification du document est supérieur a 1 mois par rapport a la date de création"}
+                result = {"docid": ident, "success": True, "message": "La modification du document est supérieur à 1 mois par rapport à la date de création"}
             
             else:
                 pages = None
@@ -180,53 +180,53 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         if criterias.finessfaux(png_text):
                             total_ok += 1
                             total_finessfaux += 1
-                            result = {"docid": ident, "success": "True", "message": "Numéro finess faux a été trouvé sur cette facture"}
+                            result = {"docid": ident, "success": True, "message": "Numéro finess en surveillance a été trouvé sur cette facture"}
                             break
 
                         if criterias.adherentssoussurveillance(png_text):
                             total_ok += 1
                             total_adherentssoussurveillance += 1
-                            result = {"docid": ident, "success": "True", "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
+                            result = {"docid": ident, "success": True, "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
                             break
 
                         if criterias.refarchivesfaux(png_text):
                             total_ok += 1
                             total_refarchivesfaux += 1
-                            result = {"docid": ident, "success": "True", "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
+                            result = {"docid": ident, "success": True, "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
                             break
 
                         if criterias.rononsoumis(png_text):
                             total_ok += 1
                             total_rononsoumis += 1
-                            result = {"docid": ident, "success": "True", "message": "Regime obligatoire non soumis sur facture"}
+                            result = {"docid": ident, "success": True, "message": "Regime obligatoire non soumis sur facture"}
                             break
 
                         png_text_list = functions.img2textlist(png_file)
                         if criterias.date_compare(png_text_list):
                             total_ok += 1
                             total_datecompare += 1
-                            result = {"docid": ident, "success": "True", "message": "Date de reglement supérieur a la date de soins sur facture"}
+                            result = {"docid": ident, "success": True, "message": "Date de reglement supérieur à la date de soins sur facture"}
                             break
 
-                        if criterias.medical_materiel(png_text):
-                            total_ok += 1
-                            total_medical_materiel += 1
-                            result = {"docid": ident, "success": "True", "message": "Montant superieur a 150 euros sur facture medical"}
-                            break
+                        #if criterias.medical_materiel(png_text):
+                            #total_ok += 1
+                            #total_medical_materiel += 1
+                            #result = {"docid": ident, "success": True, "message": "Montant superieur a 150 euros sur facture medical"}
+                            #break
 
                         if criterias.dateferiee(png_text):
                             total_ok += 1
                             total_dateferiee += 1
-                            result = {"docid": ident, "success": "True", "message": "Une date fériée a été trouver sur la facture"}
+                            result = {"docid": ident, "success": True, "message": "Une date fériée a été trouver sur la facture"}
                             break
 
                     except Exception as e:
                         print(e)
                         total_ko += 1
-                        result = {"docid": ident, "success": "False", "message": "500, erreur sur le document"}
+                        result = {"docid": ident, "success": False, "message": "500, erreur sur le document"}
                         break
 
-            # shutil.rmtree(str(paths.rootPath_img))
+            shutil.rmtree(str(paths.rootPath_img))
             os.remove(str(pdf_file_path))
 
         elif file_extension in ['jpg', 'jpeg', 'png']:
@@ -236,53 +236,53 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                 if criterias.detecter_fraude_documentaire(file):
                     total_ok += 1
                     total_meta += 1
-                    result = {"docid": ident, "success": "True", "message": "la provenance du document est suspicieuse : photoshop, canva, excel ou word"}
+                    result = {"docid": ident, "success": True, "message": "la provenance du document est suspicieuse : photoshop, canva, excel ou word"}
 
                 elif criterias.detect_modification_creation(file):
                     total_ok += 1
                     total_modification_creation += 1
-                    result = {"docid": ident, "success": "True", "message": "La modification du document est supérieur a 1 mois par rapport a la date de création"}
+                    result = {"docid": ident, "success": True, "message": "La modification du document est supérieur à 1 mois par rapport a la date de création"}
 
                 else:
                     png_text = functions.img2text(file)
                     if criterias.finessfaux(png_text):
                         total_ok += 1
                         total_finessfaux += 1
-                        result = {"docid": ident, "success": "True", "message": "Numéro finess faux a été trouvé sur cette facture"}
+                        result = {"docid": ident, "success": True, "message": "Numéro finess faux a été trouvé sur cette facture"}
 
                     elif criterias.adherentssoussurveillance(png_text):
                         total_ok += 1
                         total_adherentssoussurveillance += 1
-                        result = {"docid": ident, "success": "True", "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
+                        result = {"docid": ident, "success": True, "message": "Adherent mit sous surveillance a été trouvé sur cette facture"}
                     elif criterias.refarchivesfaux(png_text):
                         total_ok += 1
                         total_refarchivesfaux += 1
-                        result = {"docid": ident, "success": "True", "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
+                        result = {"docid": ident, "success": True, "message": "Une fausse référence d'archivage a été trouver sur cette facture"}
                     elif criterias.rononsoumis(png_text):
                         total_ok += 1
                         total_rononsoumis += 1
-                        result = {"docid": ident, "success": "True", "message": "regime obligatoire non soumis sur facture"}
+                        result = {"docid": ident, "success": True, "message": "regime obligatoire non soumis sur facture"}
                     else:
                         png_text_list = functions.img2textlist(file)
                         if criterias.date_compare(png_text_list):
                             total_ok += 1
                             total_datecompare += 1
-                            result = {"docid": ident, "success": "True", "message": "date reglement supérieur a date de soins sur facture"}
-                        elif criterias.medical_materiel(png_text):
-                            total_ok += 1
-                            total_medical_materiel += 1
-                            result = {"docid": ident, "success": "True", "message": "montant superieur a 150 euros sur facture medical"}
+                            result = {"docid": ident, "success": True, "message": "date reglement supérieur à date de soins sur facture"}
+                        #elif criterias.medical_materiel(png_text):
+                            #total_ok += 1
+                            #total_medical_materiel += 1
+                            #result = {"docid": ident, "success": True, "message": "montant superieur a 150 euros sur facture medical"}
                         elif criterias.dateferiee(png_text):
                             total_ok += 1
                             total_dateferiee += 1
-                            result = {"docid": ident, "success": "True", "message": "Une date fériée a été trouver sur la facture"}
+                            result = {"docid": ident, "success": True, "message": "Une date fériée a été trouver sur la facture"}
                         else:
                             total_ko += 1
-                            result = {"docid": ident, "success": "False", "message": "Pas de suspicion de fraude sur cette facture"}
+                            result = {"docid": ident, "success": False, "message": "Pas de suspicion de fraude sur cette facture"}
             except Exception as e:
                 print(f"Erreur lors du traitement du fichier image : {e}")
                 total_ko += 1
-                result = {"docid": ident, "success": "False", "message": f"Erreur lors du traitement de l'image{e}"}
+                result = {"docid": ident, "success": False, "message": f"Erreur lors du traitement de l'image{e}"}
         
 
 
@@ -307,7 +307,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
     except Exception as e:
         print(e)
         total_ko += 1
-        result = {"docid": ident, "success": "False", "message": "500, erreur sur le document"}
+        result = {"docid": ident, "success": False, "message": "500, erreur sur le document"}
 
     return JSONResponse(content=result)
 
@@ -328,7 +328,7 @@ def print_statistics(signal, frame):
     print(f"nombre de date de soins suspicieuse par rapport a la date de réglement: {total_datecompare}")
     print(f"nombre de reference d'archivage supérieur a 17: {total_count_ref}")
     print(f"nombre d'adherent suspicieux: {total_adherentssoussurveillance}")
-    print(f"nombre de montant superieur a 150 sur facture materiel: {total_medical_materiel}")
+    #print(f"nombre de montant superieur a 150 sur facture materiel: {total_medical_materiel}")
     print(f"metadonne trouver : {total_meta}")
     print(f"a lheure:{datetime.now()}")
     exit(0)
@@ -345,4 +345,4 @@ signal.signal(signal.SIGTERM, print_statistics)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api_jsonV3:app", host="0.0.0.0", port=8001)
+    uvicorn.run("fraude:app", host="0.0.0.0", port=8001)
