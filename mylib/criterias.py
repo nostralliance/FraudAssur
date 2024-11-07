@@ -153,7 +153,7 @@ def detecter_fraude_documentaire(pdf_path):
         liste.append(metadata.get('creator', ''))
         resultat = ' '.join(liste)
         regimeList = re.findall(r'[C|c][A|a][n|N][v|V][A|a]|[P|p][H|h][o|O][t|T][H|h][O|o][S|s][H|h][O|o][P|p]|[W|w][O|o][R|r][D|d]|[E|e][X|x][C|c][e|E][L|l]', resultat)
-        
+        print("le logiciel est:", regimeList)
         if len(regimeList) > 1:
             return True
         else:
@@ -188,12 +188,12 @@ def detecter_fraude_documentaire(pdf_path):
 
 
 
-def replace_last_9(text):
-    index_last_9 = text.rfind("9")
-    if index_last_9 != -1:  # verifier si un "9" a ete rouver
-        return text[:index_last_9] + text[index_last_9:].replace("9", "", 1)
-    else:
-        return text
+# def replace_last_9(text):
+#     index_last_9 = text.rfind("9")
+#     if index_last_9 != -1:  # verifier si un "9" a ete rouver
+#         return text[:index_last_9] + text[index_last_9:].replace("9", "", 1)
+#     else:
+#         return text
 
 # def taux_compare(pngText):
 #     result_list = []
@@ -237,7 +237,7 @@ def replace_last_9(text):
 
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
-    pattern = r"[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4}) | [vV][aA][lL][aA][bB][lL][eE] [Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
+    pattern = r"[D|d][U|u]? 01/01|04/(\d{4}) [A|a][u|U]? (\d{2})/(\d{2})/(\d{4})|[vV][aA][lL][aA][bB][lL][eE] [Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
     regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
     dateListTP_Optic = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
@@ -329,23 +329,25 @@ def rononsoumis(pngText):
 
 
 def finessfaux(pngText):
-    # On récupère la liste des Numéros finess des adhérents suspects
-    lien_surveillance = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/surveillance.xlsx'
-    #print(lien_surveillance)
-    data = pd.read_excel(lien_surveillance, sheet_name="FINESS")
-    finessList = data["NUMERO FINESS"].tolist()
-    # print(finessList)
-    # print("|".join(str(s) for s in finessList))
-    # On recherche les indices relatifs à la présence d'un numéro finess dans la page
-    resultList = re.findall(r"|".join(str(s) for s in finessList), pngText)
-    
-    # print("la FinessList est :",resultList)
-    if len(resultList) > 0 :
-        return True
+    pattern_pecoptic = r"[D|d][E|e] ?: ?'?pecoptique"
+    pecopticList = re.findall(pattern_pecoptic, pngText)
+    print("la pecoptique list est :", pecopticList)
+    if len(pecopticList)==0: # si le regex n'a pas trouver le pattern alors il fait la suite
 
-    else :
-         return False
+        # On récupère la liste des Numéros finess des adhérents suspects
+        lien_surveillance = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/surveillance.xlsx'
+        data = pd.read_excel(lien_surveillance, sheet_name="FINESS")
+        finessList = data["NUMERO FINESS"].tolist()
 
+        # On recherche les indices relatifs à la présence d'un numéro finess dans la page
+        resultList = re.findall(r"|".join(str(s) for s in finessList), pngText)
+        
+        if len(resultList) > 0 :
+            print("la result list est :",resultList)
+            return True
+
+        else :
+            return False
 
 
 def adherentssoussurveillance(pngText):
@@ -478,6 +480,7 @@ def refarchivesfaux(pngText):
             # print("Dates trouvées :", dateList)
 
             for refSplit in refList:
+
                 currentResult = False
                 # Pour chaque date récupérée
                 for dateSplit in dateList:
@@ -489,6 +492,8 @@ def refarchivesfaux(pngText):
                     if dateSplit[2][-2:] == refSplit[0]:
                         # On vérifie que le nombre de jours correspond
                         if int(refSplit[1]) - constants.REF_AGE_DELTA <= int(dateDelta.days) <= int(refSplit[1]) + constants.REF_AGE_DELTA:
+                            print(dateDelta)
+                            print(f"{dateCompare} et {dateFormat} et {refSplit}")
                             currentResult = True
                             break
 
