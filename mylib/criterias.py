@@ -237,45 +237,44 @@ def detecter_fraude_documentaire(pdf_path):
 
 def dateferiee(pngText):
     # condition pour exclure les cartes TP
-    pattern = r"[D|d][U|u]? 01/01|04/(\d{4}) [0|A|a][u|U]? (\d{2})/(\d{2})/(\d{4})|[D|d][U|u]? ?(\d{2})/(\d{2})/(\d{4}) ?[0|A|a][u|U]? ?11/11/(\d{4})|[vV][aA][lL][aA][bB][lL][eE] [Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?([0-3][0-9])[/-]([0-1][0-9])[/-]([0-9]{4})"
-    regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
-    dateListTP_Optic = re.findall(pattern, pngText)
+    #pattern= r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
+    
+    #regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
+    #dateListCarteTP = re.findall(pattern, pngText)
+    pattern = r"[D|d][U|u]? ?(\d{2})/(\d{2})/(\d{4}) [0|A|a][u|U]? (\d{2})/(\d{2})/(\d{4})|[vV][aA][lL][aA][bB][lL][eE] ?[Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?(\d{2})/(\d{2})/(\d{4})"
+    regex_devis = r'([Dd][Ee][Vv][Ii][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
+    dateListCarteTP = re.findall(pattern, pngText)
     dateListBucco = re.findall(regex_devis, str(pngText))
-
+    
     result = False
-
-    if len(dateListBucco) == 0 and len(dateListTP_Optic) == 0: # Si le regex n'a pas trouver de mot dans le texte
+    if len(dateListCarteTP)==0 and len(dateListBucco)==0:
         # On récupère la liste des dates dans le texte
         dateList = re.findall(r'([0-3]{1}[0-9]{1})[/-](1[0-2]{1}|0[1-9]{1})[/-]([0-9]{2,4})', pngText)
         dateList = list(dict.fromkeys(dateList))
-        print("la datelistferiee est :", dateList)
-
         # On récupère la liste des indices sur Alsace-Moselle dans le texte
         cpList = re.findall(r'[5-6]7\d{3}', pngText)
         cityList = re.findall(r'[a|A]lsace|[m|M]oselle', pngText)
 
         # On initialise le résultat
-        for dateSplit in dateList:
+        
+
+        for dateSplit in dateList :
             dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
 
-            # Si la date est inférieure à la durée maximale de remboursement
+            # Si la date est inférieure à la durée maximale de remboursement,        
             if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS and relativedelta(date.today(), dateFormat).years >= 0:
 
                 # Si on est en Alsace-Moselle
-                if len(cpList) > 0 or len(cityList) > 0:
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
-                        print(relativedelta(date.today(), dateFormat).years)
-                        print(dateFormat)
+                if len(cpList) > 0 or len(cityList) > 0 :
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle") :
                         result = True
                         break
-                else:
-                    # Si c'est un jour férié en Métropole
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
-                        print(relativedelta(date.today(), dateFormat).years)
-                        print(dateFormat)
+                else :
+                    # Si c'est un jour férié en Métropole, on suspecte une fraude
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole") :
                         result = True
                         break
-
+        
     return result
 
 
@@ -348,6 +347,23 @@ def finessfaux(pngText):
 
         else :
             return False
+
+
+def siret(pngText):
+    # On récupère la liste des Numéros finess des adhérents suspects
+    lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.xlsx'
+    data = pd.read_csv(lien_siret)
+    siret_list = data["siret"].tolist()
+
+    # On recherche les indices relatifs à la présence d'un numéro finess dans la page
+    resultList = re.findall(r"|".join(str(s) for s in siret_list), pngText)
+    
+    if len(resultList) > 0 :
+        print("la result list est :",resultList)
+        return True
+
+    else :
+        return False
 
 
 def adherentssoussurveillance(pngText):
