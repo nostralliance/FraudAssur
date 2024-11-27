@@ -349,19 +349,48 @@ def finessfaux(pngText):
             return False
 
 
-def siret(pngText):
-    # On récupère la liste des Numéros finess des adhérents suspects
-    lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.xlsx'
-    data = pd.read_csv(lien_siret)
-    siret_list = data["siret"].tolist()
+# def siret(pngText):
+#     # On récupère la liste des Numéros finess des adhérents suspects
+#     lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.csv'
+#     data = pd.read_csv(lien_siret)
+#     siret_list = data["siret"].tolist()
 
-    # On recherche les indices relatifs à la présence d'un numéro finess dans la page
-    resultList = re.findall(r"|".join(str(s) for s in siret_list), pngText)
+#     # On recherche les indices relatifs à la présence d'un numéro finess dans la page
+#     resultList = re.findall(r"|".join(str(s) for s in siret_list), pngText)
     
-    if len(resultList) > 0 :
-        print("la result list est :",resultList)
-        return True
+#     if len(resultList) > 0 :
+#         print("la result list est :",resultList)
+#         return True
 
+#     else :
+#         return False
+
+def siret(pngText):
+    # Charger les SIRET dans un set pour une recherche rapide
+    lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.csv'
+    data = pd.read_csv(lien_siret)
+    siret_set = set(data["siret"].astype(str))
+
+    extracted_siret = re.findall(r'\b(\d{3}\s?\d{3}\s?\d{3}\s?\d{5})', pngText) #juste une suite de 14chiffres
+    print("siret trouvee dans texte:", extracted_siret)
+    # Vérifier si l'un des SIRET extraits est dans le fichier
+    matches = [siret for siret in extracted_siret if siret in siret_set]
+
+    if matches:
+        print("SIRET trouvés comme suspicieux:", matches)
+        return True
+    else:
+        return False
+
+# Pour l'instant aucune condition n'est mis en place, comme supérieur a 60.
+def facture_lentille(pngText):
+    pattern_pu = r"[Pp][Uu] ?(?:[Nn][Ee][Tt])? ?[Hh][Tt].*?(\d{2,}[ ]?[,.][ ]?\d{2})"
+    PuList = re.findall(pattern_pu, pngText, re.DOTALL)
+    print("Les prix unitaire list sont :", PuList)
+
+    if len(PuList) > 0 :
+        print("la result list est :",PuList)
+        return True
     else :
         return False
 

@@ -135,10 +135,11 @@ total_medical_materiel = 0
 total_meta = 0
 total_modification_creation = 0
 total_siret = 0
+total_lentille = 0
 
 @app.post('/process_json')
 async def process_file(current_user: Annotated[User, Depends(get_current_active_user)], request: PDFRequest):
-    global total_siret,total_modification_creation, total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
+    global total_lentille, total_siret,total_modification_creation, total_factures, total_ok, total_ko, total_taux_compare, total_dateferiee, total_refarchivesfaux, total_rononsoumis, total_finessfaux, total_datecompare, total_count_ref, total_adherentssoussurveillance, total_medical_materiel, total_meta
     total_factures += 1
     
     ident = request.docid
@@ -165,7 +166,7 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                 total_meta += 1
                 result = {"docid": ident, "success": True, "message": "La provenance du document est suspicieuse : photoshop, canva, excel ou word"}
 
-            elif criterias.detect_modification_creation(pdf_file_path):
+            if criterias.detect_modification_creation(pdf_file_path):
                 total_ok += 1
                 total_modification_creation += 1
                 result = {"docid": ident, "success": True, "message": "La modification du document est supérieur a 1 mois par rapport a la date de création"}
@@ -194,7 +195,13 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                             total_ok += 1
                             total_siret += 1
                             result = {"docid": ident, "success": True, "message": "L'entreprise a cessé de fonctionner"}
-                            break                        
+                            break   
+
+                        if criterias.facture_lentille(png_text):
+                            total_ok += 1
+                            total_lentille +=1
+                            result = {"docid": ident, "success": True, "message": "un montant détecté sur facture lentille"}
+                            break                                                   
 
                         if criterias.refarchivesfaux(png_text):
                             total_ok += 1
@@ -265,7 +272,12 @@ async def process_file(current_user: Annotated[User, Depends(get_current_active_
                         total_ok += 1
                         total_siret += 1
                         result = {"docid": ident, "success": True, "message": "L'entreprise a cessé de fonctionner"}                     
-                    
+
+                    elif criterias.facture_lentille(png_text):
+                        total_ok += 1
+                        total_lentille +=1
+                        result = {"docid": ident, "success": True, "message": "un montant détecté sur facture lentille"}
+
                     elif criterias.refarchivesfaux(png_text):
                         total_ok += 1
                         total_refarchivesfaux += 1
@@ -343,6 +355,7 @@ def print_statistics(signal, frame):
     print(f"nombre de montant superieur a 150 sur facture materiel: {total_medical_materiel}")
     print(f"metadonne trouver : {total_meta}")
     print(f"siret trouver : {total_siret}")
+    print(f"montant lentille trouvé : {total_lentille}")
     print(f"a lheure:{datetime.now()}")
     exit(0)
 
