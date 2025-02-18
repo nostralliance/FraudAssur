@@ -142,9 +142,9 @@ def img2textlist(pngFile):
 
 def extract_dates_and_amounts(text: str) -> Dict[str, list]:
     date_pattern = r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"
-    montant_pattern_avant = r"(?:E\s*|€\s*|(?i)euro[(?s?)?]\s*)\s*\d+(?:[.,]\d{1,2})?"
-    montant_pattern_apres = r"\d+(?:[.,]\d{1,2})?\s*(?:E|€|(?i)euro[(?s?)?])"
-    code_pattern = r"[A-Za-z]\s?\b\d{5}\b\s?[A-Za-z]"
+    montant_pattern_avant = r"(?:E\s*|€\s*|euro[(?s?)?]\s*)\s*\d+(?:[.,]\d{1,2})?"
+    montant_pattern_apres = r"\d+(?:[.,]\d{1,2})?\s*(?:E|€|euro[(?s?)?])"
+    code_pattern = r"[A-Za-z]\s?\d{5}\s?[A-Za-z]"
     
     dates = re.findall(date_pattern, text)
     amounts_avant = re.findall(montant_pattern_avant, text)
