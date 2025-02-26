@@ -4,6 +4,7 @@ tmpDir = '/depot/TMP/'
 path_surveillance = '/MMC/depot/TMP/data'
 rootPath_img = pathlib.Path('images/')
 tmpDirImg = '/depot/image/'
+tmpDirPdf = '/depot/pagepdf/'
 dateFerieeDir = '/check/date_feriee/'
 aucuneDir ='/check/aucune_fraude/'
 finessDir = '/check/finess_faux/'

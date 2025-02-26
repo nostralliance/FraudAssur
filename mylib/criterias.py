@@ -18,8 +18,10 @@ import os
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 import pathlib
 import json
+import pdfplumber
 
-
+from easyocr import Reader
+reader = Reader(["fr"], gpu=False)
 
 
 def detect_file_type(data):
@@ -31,6 +33,34 @@ def detect_file_type(data):
         return 'png'
     else:
         raise HTTPException(status_code=400, detail="Format de fichier non supporté")
+
+
+
+def leclerc(pngText):
+    """
+    Détecte si le document est une facture Leclerc et vérifie si le numéro de commande a moins de 7 chiffres.
+   
+    Retourne True si c'est une facture Leclerc et que le numéro de commande est valide (moins de 7 chiffres).
+    """
+    # Vérification de la présence de "Leclerc"
+   
+    #is_leclerc= re.findall(r'[Ee]?[L|l][E|e][C|c][Ll][Ee][Rr][Cc][(]?[Ll]?[)]?', pngText)
+    is_leclerc= re.findall(r'[Ee]?[L|l][E|e][C|c][Ll][Ee][Rr][Cc][(]?[Ll]?[)]?', pngText)
+    print(is_leclerc)
+    if is_leclerc :
+        match = re.search(r"(?i)commande\s*N['° ]?\s*([A-Z]?\d+)", pngText)
+        order_number = match.group(1)
+        print(f"🔹 Numéro de commande détecté : {order_number}")
+ 
+                # Vérifier si le numéro de commande contient moins de 7 chiffres
+        if len(order_number) < 8:
+            return True
+        else:
+            return False
+ 
+    return False  # Retourne False si ce n'est pas une facture Leclerc ou numéro incorrect
+
+
 
 def detect_modification_creation(file_path):
     extension = os.path.splitext(file_path)[1].lower()
@@ -236,11 +266,7 @@ def detecter_fraude_documentaire(pdf_path):
 #         return False
 
 def dateferiee(pngText):
-    # condition pour exclure les cartes TP
-    #pattern= r'[D|d][U|u] 01/01/(\d{4}) [A|a][u|U] (\d{2})/(\d{2})/(\d{4})'
-    
-    #regex_devis = r'([Dd][Ee][Vv][Ii][Ss]\ [Pp][Oo][Uu][Rr]\ [Ll][Ee][Ss]\ [Tt][Rr][Aa][Ii][Tt][Ee][Mm][Ee][Nn][Tt][Ss]\ [Ee][Tt]\ [Aa][Cc][Tt][Ee][Ss]\ [Bb][Uu][Cc][Cc][Oo]\-[Dd][Ee][Nn][Tt][Aa][Ii][Rr][Ee][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
-    #dateListCarteTP = re.findall(pattern, pngText)
+
     pattern = r"[D|d][U|u]? ?(\d{2})/(\d{2})/(\d{4}) [0|A|a][u|U]? (\d{2})/(\d{2})/(\d{4})|[vV][aA][lL][aA][bB][lL][eE] ?[Jj][uU][sS][qQ][uU]'?[aA][uU] ?:? ?(\d{2})/(\d{2})/(\d{4})"
     regex_devis = r'([Dd][Ee][Vv][Ii][Ss]|[Aa][Mm][Cc]|[Ee][Ff][Ff][Ee][Tt])'
     dateListCarteTP = re.findall(pattern, pngText)
@@ -257,21 +283,28 @@ def dateferiee(pngText):
 
         # On initialise le résultat
         
-
-        for dateSplit in dateList :
+        for dateSplit in dateList:
             dateFormat = date(int(dateSplit[2]), int(dateSplit[1]), int(dateSplit[0]))
+            print(f"Date analysée : {dateFormat}")  # Affiche chaque date analysée
 
-            # Si la date est inférieure à la durée maximale de remboursement,        
+            # Si la date est inférieure à la durée maximale de remboursement
             if relativedelta(date.today(), dateFormat).years < constants.MAX_REFUND_YEARS and relativedelta(date.today(), dateFormat).years >= 0:
-
                 # Si on est en Alsace-Moselle
-                if len(cpList) > 0 or len(cityList) > 0 :
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle") :
+                if len(cpList) > 0 or len(cityList) > 0:
+                    # Affiche ce qui indique qu'on est en Alsace-Moselle
+                    if len(cpList) > 0:
+                        print(f"Présence de codes postaux Alsace-Moselle : {cpList}")
+                    if len(cityList) > 0:
+                        print(f"Présence de mentions Alsace-Moselle : {cityList}")
+                    
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Alsace-Moselle"):
+                        print(f"Jour férié trouvé (Alsace-Moselle) : {dateFormat}")  # Affiche la date trouvée comme jour férié
                         result = True
                         break
-                else :
-                    # Si c'est un jour férié en Métropole, on suspecte une fraude
-                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole") :
+                else:
+                    # Si c'est un jour férié en Métropole
+                    if JoursFeries.is_bank_holiday(dateFormat, zone="Métropole"):
+                        print(f"Jour férié trouvé (Métropole) : {dateFormat}")  # Affiche la date trouvée comme jour férié
                         result = True
                         break
         
@@ -349,22 +382,6 @@ def finessfaux(pngText):
             return False
 
 
-# def siret(pngText):
-#     # On récupère la liste des Numéros finess des adhérents suspects
-#     lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.csv'
-#     data = pd.read_csv(lien_siret)
-#     siret_list = data["siret"].tolist()
-
-#     # On recherche les indices relatifs à la présence d'un numéro finess dans la page
-#     resultList = re.findall(r"|".join(str(s) for s in siret_list), pngText)
-    
-#     if len(resultList) > 0 :
-#         print("la result list est :",resultList)
-#         return True
-
-#     else :
-#         return False
-
 def siret(pngText):
     # Charger les SIRET dans un set pour une recherche rapide
     lien_siret = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/siret.csv'
@@ -382,19 +399,53 @@ def siret(pngText):
     else:
         return False
 
-# Pour l'instant aucune condition n'est mis en place, comme supérieur a 60.
-def facture_lentille(pngText):
-    pattern_pu = r"[Pp][Uu] ?(?:[Nn][Ee][Tt])? ?[Hh][Tt].*?(\d{2,}[ ]?[,.][ ]?\d{2})"
-    PuList = re.findall(pattern_pu, pngText, re.DOTALL)
-    print("Les prix unitaire list sont :", PuList)
+def facture_lentille_et_pu(pngText, image_path):
+    # Regex pour détecter "lentilles"
+    resultat = False
+    pattern_lentille = r"[Ll][Ee][Nn][Tt][Ii][Ll][Ll][Ee][Ss]?"
 
-    if len(PuList) > 0 :
-        print("la result list est :",PuList)
-        return True
-    else :
-        return False
+    # Trouver toutes les occurrences de "lentilles" dans le texte OCR
+    lentilleList = re.findall(pattern_lentille, pngText)
+    print("Liste des occurrences de 'lentilles' :", lentilleList)
 
+    # Vérifiez si "lentilles" est trouvé
+    if len(lentilleList) > 0:
+        # Extraire le texte avec EasyOCR
+        resultats = reader.readtext(image_path)
 
+        # Regex pour détecter "PU net HT" ou synonymes
+        regex_mot_cle = r'[Pp][Uu] ?([Nn][Ee]([Tt]|[Ll]))? ?[Hh]|[Uu][Nn][Ii][Tt][Aa][Ii][Rr][Ee]'
+
+        for detection in resultats:
+            texte = detection[1]
+            coordonnees = detection[0]
+            
+            if re.match(regex_mot_cle, texte):
+                print("mot clé trouver")
+                # Logique pour trouver un montant sous "PU net HT"
+                x1, y1 = coordonnees[0]
+                x2, y2 = coordonnees[2]
+                centre_x = (x1 + x2) / 2
+                centre_y = (y1 + y2) / 2
+
+                for detection_suivante in resultats:
+                    texte_suivant = detection_suivante[1]
+                    coordonnees_suivantes = detection_suivante[0]
+                    x1_suivant, y1_suivant = coordonnees_suivantes[0]
+                    x2_suivant, y2_suivant = coordonnees_suivantes[2]
+
+                    centre_x_suivant = (x1_suivant + x2_suivant) / 2
+                    centre_y_suivant = (y1_suivant + y2_suivant) / 2
+
+                    if centre_y_suivant > centre_y and abs(centre_x_suivant - centre_x) <= (x2 - x1) / 2:
+                        print(f"Nombre trouvé après 'PU net HT' : {texte_suivant}")
+                        if texte_suivant.replace(",", "").replace(".", "").isdigit():
+                            resultat = True
+
+    # Retourner False si rien n'est trouvé
+    return resultat
+
+    
 def adherentssoussurveillance(pngText):
     # On récupère la liste des noms des adhérents suspects
     lien_surveillance = r'C:/Users/pierrontl/Documents/GitHub/detection/DMR_fraude/MMC/depot/TMP/data/surveillance.xlsx'
